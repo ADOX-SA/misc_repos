@@ -1,14 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.android)
 }
 
 android {
-    namespace = "com.example.soundboard"
+    namespace = "com.beto.soundboard"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.soundboard"
+        applicationId = "com.beto.soundboard"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui.text.google.fonts)
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -66,4 +68,12 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation("androidx.navigation:navigation-compose:2.7.0")
+/* coil implementation */
+
+    implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.0-rc01")
+
+
 }
