@@ -1,7 +1,7 @@
 package com.beto.soundboard.ui.screens
 
-import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
+import android.media.MediaPlayer
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,34 +10,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.sharp.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.beto.soundboard.ui.components.TitleItem
+
 
 @ExperimentalLayoutApi
 @Composable
@@ -55,13 +46,19 @@ fun HomeScreen(modifier: Modifier){
                     .padding(top = 5.dp, start = 5.dp, end = 5.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                SoundButton()
-                SoundButton()
-                SoundButton()
-                SoundButton()
-                SoundButton()
-                SoundButton()
-                SoundButton()
+                SoundButton(
+                    imageurl = "https://battlingblades.com/cdn/shop/products/DSC05982.jpg?v=1617661668&width=1080",
+                    soundUrl = "https://www.sonidosmp3gratis.com/sounds/samurai-1.mp3"
+                )
+                SoundButton(
+                    imageurl = "https://cdn.britannica.com/96/176196-050-EFC5E6A6/Glock-pistol.jpg",
+                    soundUrl = "https://www.sonidosmp3gratis.com/sounds/9-mm-gunshot.mp3"
+                )
+                SoundButton(
+                    imageurl = "https://lahora.gt/wp-content/uploads/sites/5/2016/06/Cul7_1-2-1.jpg",
+                    soundUrl = "https://www.sonidosmp3gratis.com/sounds/grito-wilhelm.mp3"
+                )
+
             }
         }
 
@@ -78,21 +75,23 @@ fun HomeScreenPreview(){
 @Preview
 @Composable
 fun SoundButton(
-    url: String = "https://t4.ftcdn.net/jpg/05/67/80/91/360_F_567809113_Vlhu0id4nej1xlP7wNreZKF8dPmANhgs.jpg",
+    imageurl: String = "https://t4.ftcdn.net/jpg/05/67/80/91/360_F_567809113_Vlhu0id4nej1xlP7wNreZKF8dPmANhgs.jpg",
+    soundUrl: String = "https://www.sonidosmp3gratis.com/sounds/samurai-1.mp3",
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     name: String? = null,
 ){
-    var visible by remember {
-        mutableStateOf(true)
-    }
-    // cargar el sonido desde la api de google drive
-    AnimatedVisibility(visible) {
-
+    //download sound from this url
+    // load in mediaplayer
+    val context = LocalContext.current
+    val mediaPlayer = MediaPlayer.create(
+        context,
+        Uri.parse(soundUrl)
+    )
 
     Column(
         Modifier.clickable {
-
+            mediaPlayer.start()
         }
     ) {
         Text(text = "SoundButton", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
@@ -109,7 +108,7 @@ fun SoundButton(
         {
 
             AsyncImage(
-                model = "https://t4.ftcdn.net/jpg/05/67/80/91/360_F_567809113_Vlhu0id4nej1xlP7wNreZKF8dPmANhgs.jpg",
+                model = imageurl,
                 contentDescription = "sound logo",
                 modifier = Modifier.fillMaxSize()
             )
@@ -118,7 +117,7 @@ fun SoundButton(
         }
     }
 
-    }
+
 }
 
 @Composable
