@@ -1,25 +1,21 @@
 package com.beto.soundboard.service
 
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.POST
 
 interface ApiService {
     @GET("posts")
     suspend fun getSounds(): Any
 }
 
-object RetrofitInstance {
-    private
-    const val BASE_URL = "https://jsonplaceholder.typicode.com/"
-    val api: ApiService by lazy {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(
-                GsonConverterFactory
-                .create())
-            .build()
-        retrofit.create(ApiService::class.java)
-    }
+private object ApiDropbox {
+    private const val BASE_URL = "https://jsonplaceholder.typicode.com/"
+    private val retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .addConverterFactory(MoshiConverterFactory.create()).client(OkHttpClient.Builder().build())
+        .build().create(ApiService::class.java)
+
+    suspend fun getSounds() = retrofit.getSounds()
 }

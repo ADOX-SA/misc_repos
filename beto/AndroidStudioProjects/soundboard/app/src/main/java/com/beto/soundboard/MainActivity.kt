@@ -16,10 +16,6 @@ import androidx.compose.ui.Modifier
 import com.beto.soundboard.ui.components.TopBar
 import com.beto.soundboard.ui.screens.HomeScreen
 import com.beto.soundboard.ui.theme.SoundboardTheme
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
 
 
 class MainActivity : ComponentActivity() {

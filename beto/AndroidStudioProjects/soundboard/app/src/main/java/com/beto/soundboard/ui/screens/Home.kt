@@ -91,7 +91,11 @@ fun SoundButton(
 
     Column(
         Modifier.clickable {
-            mediaPlayer.start()
+            mediaPlayer?.stop()
+            mediaPlayer?.prepareAsync()
+            mediaPlayer.setOnPreparedListener{
+                mediaPlayer.start()
+            }
         }
     ) {
         Text(text = "SoundButton", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
