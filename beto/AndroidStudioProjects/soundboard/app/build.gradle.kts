@@ -78,7 +78,8 @@ dependencies {
     implementation("androidx.compose.animation:animation:1.7.3")
     // Retrofit for API requests
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+
     // google
     implementation("com.google.android.gms:play-services-auth:20.4.0")
     // Coroutines for asynchronous programming

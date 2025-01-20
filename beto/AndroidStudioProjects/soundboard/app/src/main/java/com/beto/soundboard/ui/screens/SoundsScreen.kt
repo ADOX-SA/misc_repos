@@ -69,6 +69,43 @@ fun HomeScreenPreview(){
 }
 
 
+<<<<<<< HEAD:beto/AndroidStudioProjects/soundboard/app/src/main/java/com/beto/soundboard/ui/screens/SoundsScreen.kt
+=======
+    Column(
+        Modifier.clickable {
+            mediaPlayer?.stop()
+            mediaPlayer?.prepareAsync()
+            mediaPlayer.setOnPreparedListener{
+                mediaPlayer.start()
+            }
+        }
+    ) {
+        Text(text = "SoundButton", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+        Box(modifier = Modifier
+            .size(105.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .border(
+                width = 0.5.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = MaterialTheme.shapes.extraSmall
+            )
+            .padding(1.dp)
+        )
+        {
+
+            AsyncImage(
+                model = imageurl,
+                contentDescription = "sound logo",
+                modifier = Modifier.fillMaxSize()
+            )
+//            Image(painter = painterResource(id = R.drawable.logo) , contentDescription = "SoundButton", modifier = Modifier.align(
+//                Alignment.Center) )
+        }
+    }
+
+
+}
+>>>>>>> 5eac1443b8a5d6dbbf64931e8df580b215a4fac7:beto/AndroidStudioProjects/soundboard/app/src/main/java/com/beto/soundboard/ui/screens/Home.kt
 
 @Composable
 fun AmbientButton(){
