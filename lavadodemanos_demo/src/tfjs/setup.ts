@@ -2,15 +2,6 @@ import * as tf from "@tensorflow/tfjs";
 import { RefObject } from "react";
 import Webcam from "react-webcam";
 
-async function loadModel() {
-  return tf.loadGraphModel("/hands_model/model.json");
-}
-
-const hands_model_setup = async () => {
-  const model = await loadModel();
-  return model;
-};
-
 export const detect = async (
   model: tf.GraphModel,
   webcam: RefObject<Webcam | null>,

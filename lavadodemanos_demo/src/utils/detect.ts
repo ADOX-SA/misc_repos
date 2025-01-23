@@ -51,7 +51,10 @@ const preprocess = (
  */
 export const detect = async (
   source: HTMLImageElement | HTMLVideoElement,
-  model: tf.GraphModel,
+  model: {
+    net: tf.GraphModel;
+    inputShape: number[];
+  },
   canvasRef: HTMLCanvasElement,
   callback: VoidFunction = () => {}
 ) => {
@@ -61,8 +64,14 @@ export const detect = async (
   tf.engine().startScope(); // start scoping tf engine
   const [input, xRatio, yRatio] = preprocess(source, modelWidth, modelHeight); // preprocess image
 
-  const res = model.net.execute(input); // inference model
+  // ACA ES LA PREDICCION
+  //EJECUTA EL MODELO SOBRE LA IMAGEN PREPROCESSADA
+  const res = model.net.execute(input) as tf.Tensor<tf.Rank>; // inference model
+  // RES= [1, 11, 8400] 1 batch/ejemplo/imagen, 11 atributos por deteccion, 8400 detecciones
+
+  input.dispose(); // libera de la memoria el tensor armado en preprocess, ya que no se usa mas y se pasa a ysar el res
   const transRes = res.transpose([0, 2, 1]); // transpose result [b, det, n] => [b, n, det]
+  console.log(transRes, "transRes", transRes.shape);
   const boxes = tf.tidy(() => {
     const w = transRes.slice([0, 0, 2], [-1, -1, 1]); // get width
     const h = transRes.slice([0, 0, 3], [-1, -1, 1]); // get height
@@ -98,7 +107,6 @@ export const detect = async (
   const boxes_data = boxes.gather(nms, 0).dataSync(); // indexing boxes by nms index
   const scores_data = scores.gather(nms, 0).dataSync(); // indexing scores by nms index
   const classes_data = classes.gather(nms, 0).dataSync(); // indexing classes by nms index
-
   renderBoxes(canvasRef, boxes_data, scores_data, classes_data, [
     xRatio,
     yRatio,
@@ -116,7 +124,14 @@ export const detect = async (
  * @param {tf.GraphModel} model loaded YOLOv8 tensorflow.js model
  * @param {HTMLCanvasElement} canvasRef canvas reference
  */
-export const detectVideo = (vidSource, model, canvasRef) => {
+export const detectVideo = (
+  vidSource: HTMLVideoElement,
+  model: {
+    net: tf.GraphModel;
+    inputShape: number[];
+  },
+  canvasRef: HTMLCanvasElement
+) => {
   /**
    * Function to detect every frame from video
    */
