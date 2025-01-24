@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import ButtonHandler from "@/components/btn-handler";
 import Loader from "@/components/loader";
 import { detect, detectVideo } from "../utils/detect";
-import "../style/App.css";
+import style from "../style/App.module.css";
 
 // import "@tensorflow/tfjs-backend-webgl";
 
@@ -20,7 +20,6 @@ export default function Home() {
   });
   const imageRef = useRef(null);
   const cameraRef = useRef(null);
-  const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
   const modelName = "hands_model";
@@ -50,24 +49,23 @@ export default function Home() {
   }, []);
   return (
     <div className="grid place-items-center">
-      <div className="App">
+      <div className={style.App}>
         {loading.loading && (
           <Loader>
-            Loading model... {(loading.progress * 100).toFixed(2)}%
+            Cargando modelo... {(loading.progress * 100).toFixed(2)}%
           </Loader>
         )}
-        <div className="header">
-          <h1>📷 YOLOv8 Live Detection App</h1>
+        <div className={style.header}>
+          <h1>📷 Aplicación de detección de lavado de manos</h1>
           <p>
-            YOLOv8 live detection application on browser powered by{" "}
-            <code>tensorflow.js</code>
+            ADOX
           </p>
           <p>
-            Serving : <code className="code">{modelName}</code>
+            Servicio : <code className={style.code}>{modelName}</code>
           </p>
         </div>
 
-        <div className="content">
+        <div className={style.content}>
           <img
             src="#"
             ref={imageRef}
@@ -91,7 +89,6 @@ export default function Home() {
         <ButtonHandler
           imageRef={imageRef}
           cameraRef={cameraRef}
-          videoRef={videoRef}
         />
       </div>
     </div>

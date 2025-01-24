@@ -9,7 +9,7 @@
   align-items: center;
 }
 
-.wrapper > .spinner {
+.wrapper .spinner {
   width: 40px;
   height: 40px;
   background-color: #333;
@@ -46,7 +46,7 @@
   }
 }
 
-.wrapper > p {
+.wrapper p {
   margin: 0;
   font-size: large;
 }
