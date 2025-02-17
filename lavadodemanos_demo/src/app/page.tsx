@@ -52,9 +52,7 @@ export default function Home() {
     <div className="grid place-items-center">
       <div className="App">
         {loading.loading && (
-          <Loader>
-            Loading model... {(loading.progress * 100).toFixed(2)}%
-          </Loader>
+          <Loader  text= "Cargando modelo..." progress={`${(loading.progress * 100).toFixed(2)}%`} />
         )}
         <div className="header">
           <h1>📷 YOLOv8 Live Detection App</h1>
