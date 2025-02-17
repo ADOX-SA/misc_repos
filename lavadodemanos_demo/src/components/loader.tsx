@@ -8,7 +8,7 @@ type LoaderProps = {
 
 const Loader: React.FC<LoaderProps> = ({ text, progress }) => {
   // Convertimos el progress a número, asegurando que sea válido
-  const progressValue = parseFloat(progress) || 0;
+  const progressValue = parseFloat(progress);
 
   return (
     <div className={style.body}>
