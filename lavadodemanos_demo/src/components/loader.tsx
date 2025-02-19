@@ -8,8 +8,7 @@ type LoaderProps = {
 
 const Loader: React.FC<LoaderProps> = ({ text, progress }) => {
   const progressValue = isNaN(parseFloat(progress)) ? 0 : parseFloat(progress);
-  const roundedProgress = Math.round(progressValue); // Redondear a un número entero
-  console.log("roundedProgress: ", roundedProgress)
+  const roundedProgress = Math.round(progressValue);
   
   return (
     <div className={style.body}>
