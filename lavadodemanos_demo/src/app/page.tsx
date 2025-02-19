@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import ButtonHandler from "@/components/btn-handler";
 import Loader from "@/components/loader";
 import { detect, detectVideo } from "../utils/detect";
+import style from '../style/App.module.css';
 import "../style/App.css";
 
 // import "@tensorflow/tfjs-backend-webgl";
@@ -49,23 +50,25 @@ export default function Home() {
     });
   }, []);
   return (
-    <div className="grid place-items-center">
-      <div className="App">
+    <div className={style.centeredGrid}>
+      <div className={style.app}>
         {loading.loading && (
-          <Loader  text= "Cargando modelo..." progress={`${(loading.progress * 100).toFixed(2)}%`} />
+          <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />
         )}
-        <div className="header">
-          <h1>📷 YOLOv8 Live Detection App</h1>
-          <p>
-            YOLOv8 live detection application on browser powered by{" "}
-            <code>tensorflow.js</code>
+        <div className={style.header}>
+          <img src="/LogoAdox.png" alt="Logo de ADOX" />
+
+          <p>¡Bienvenido a ADOX HandWash AI! 👏</p>
+          <p className={style.description}>
+            Este sistema inteligente analiza el lavado de manos en tiempo real, 
+            detectando movimientos y asegurando un proceso adecuado.
           </p>
           <p>
-            Serving : <code className="code">{modelName}</code>
+            Modelo de servicio utilizado: <code className={style.code}>{modelName}</code>
           </p>
         </div>
 
-        <div className="content">
+        <div className={style.content}>
           <img
             src="#"
             ref={imageRef}
