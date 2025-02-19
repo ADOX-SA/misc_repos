@@ -7,24 +7,24 @@ type LoaderProps = {
 };
 
 const Loader: React.FC<LoaderProps> = ({ text, progress }) => {
-  // Convertimos el progress a número, asegurando que sea válido
-  const progressValue = parseFloat(progress);
-
+  const progressValue = isNaN(parseFloat(progress)) ? 0 : parseFloat(progress);
+  const roundedProgress = Math.round(progressValue); // Redondear a un número entero
+  console.log("roundedProgress: ", roundedProgress)
+  
   return (
     <div className={style.body}>
       <div className={style.content}>
         <img src="/LogoAdox.png" alt="Logo de ADOX" />
         <p className={style.title}>Lavado de manos</p>
         <p className={style.text}>{text}</p>
-
+  
         {/* Contenedor de la barra de progreso */}
         <div className={style.progressContainer}>
-          <p className={style.progressText}>{progressValue.toFixed(2)}%</p>
-          
+          <p className={style.progressText}>{`${progressValue.toFixed(2)}%`}</p>
           <div className={style.progressBar}>
             <div
               className={style.progressFill}
-              style={{ width: `${progressValue}%` }}
+              style={{ width: `${roundedProgress}%` }} 
             />
           </div>
         </div>
