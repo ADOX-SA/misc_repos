@@ -55,20 +55,27 @@ export default function Home() {
         {loading.loading && (
           <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />
         )}
-        <div className={style.header}>
+      <div className={style.colum}>
+          <div className={style.columnContent1}>
+            <h1>Paso 4</h1>
+            <img src="/Pasos/Paso4.jpg" alt="Paso de lavado de mano" />
+            <p>Dorso de los dedos contra la palma opuesta con los dedos ajustados.</p>
+          </div>
+        <div className={style.columnContent2}>
           <img src="/LogoAdox.png" alt="Logo de ADOX" />
-
-          <p>¡Bienvenido a ADOX HandWash AI! 👏</p>
-          <p className={style.description}>
-            Este sistema inteligente analiza el lavado de manos en tiempo real, 
-            detectando movimientos y asegurando un proceso adecuado.
-          </p>
-          <p>
-            Modelo de servicio utilizado: <code className={style.code}>{modelName}</code>
-          </p>
+          <p className={style.title}>Control de lavado de manos</p>
+          <div className={style.divider}/>
+          <p className={style.subTitles1}>Pasos completados</p>
+          
+          {/* Iconos de pasos completados */}
+          <p className={style.subTitles2}>Tiempo</p>
+          {/* barra grafica de tiempo */}
+          <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
+          <div className={style.divider}/>
         </div>
+      </div>
 
-        <div className={style.content}>
+        {/* <div className={style.content}>
           <img
             src="#"
             ref={imageRef}
@@ -93,7 +100,7 @@ export default function Home() {
           imageRef={imageRef}
           cameraRef={cameraRef}
           videoRef={videoRef}
-        />
+        /> */}
       </div>
     </div>
   );
