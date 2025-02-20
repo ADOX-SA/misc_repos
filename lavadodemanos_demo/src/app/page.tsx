@@ -10,6 +10,8 @@ import Loader from "@/components/loader";
 import { detect, detectVideo } from "../utils/detect";
 import style from '../style/App.module.css';
 import "../style/App.css";
+import SvgIcon from "@/components/IconSteps/IconSteps";
+import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 
 // import "@tensorflow/tfjs-backend-webgl";
 
@@ -59,17 +61,26 @@ export default function Home() {
           <div className={style.columnContent1}>
             <h1>Paso 4</h1>
             <img src="/Pasos/Paso4.jpg" alt="Paso de lavado de mano" />
-            <p>Dorso de los dedos contra la palma opuesta con los dedos ajustados.</p>
           </div>
         <div className={style.columnContent2}>
           <img src="/LogoAdox.png" alt="Logo de ADOX" />
           <p className={style.title}>Control de lavado de manos</p>
           <div className={style.divider}/>
           <p className={style.subTitles1}>Pasos completados</p>
-          
-          {/* Iconos de pasos completados */}
+          {/* Iconos de pasos completados*/}
+          {/* TODO:Mapear esto... */}
+          <div className={style.IconSteps}>
+            <SvgIcon color="#5396ED"/>
+            <SvgIcon color="#5396ED"/>
+            <SvgIcon color="#5396ED"/>
+            <SvgIcon color="#AA4CF2"/>
+            <SvgIcon/>
+            <SvgIcon/>
+            <SvgIcon/>
+          </div>
           <p className={style.subTitles2}>Tiempo</p>
           {/* barra grafica de tiempo */}
+          <CircularProgressTime initialTime={16} size="180"/>
           <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
           <div className={style.divider}/>
         </div>

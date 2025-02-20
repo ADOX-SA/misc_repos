@@ -1,0 +1,32 @@
+.progressContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.backgroundCircle {
+    stroke: #D9D9D9;
+    stroke-width: 8;
+    fill: none;
+}
+
+.progressCircle {
+    stroke: #AA4CF2;
+    stroke-width: 8;
+    fill: none;
+}
+
+.innerCircle {
+    fill: #FFFF;
+}
+
+.text {
+    color: #AA4CF2;
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 100;
+    font-size: 32px;
+}
+
+
+
