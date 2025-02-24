@@ -4,9 +4,10 @@ import styles from './TimeProgress.module.css';
 interface CircularProgressProps {
     initialTime: number;
     size?: string;
+    timeIsUp:React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="100" }) => {
+const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="100", timeIsUp}) => {
     const [time, setTime] = useState(initialTime);
 
     useEffect(() => {
@@ -15,6 +16,10 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="
             setTime((prev) => prev - 1);
         }, 1000);
         return () => clearInterval(timer);
+        } else {
+            if(time == 0){
+                timeIsUp(true);
+            }
         }
     }, [time]);
 
