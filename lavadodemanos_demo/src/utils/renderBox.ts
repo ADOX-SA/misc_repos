@@ -31,7 +31,7 @@ export const renderBoxes = (
 
   for (let i = 0; i < scores_data.length; ++i) {
     // filter based on class threshold
-    const klass = labels[classes_data[i]];
+    const klass = labels[i].name;
     const color = colors.get(classes_data[i]);
     const score = (scores_data[i] * 100).toFixed(1);
 
