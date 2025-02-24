@@ -4,11 +4,10 @@ import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
 // import Webcam from "react-webcam";
 import * as tf from "@tensorflow/tfjs";
 import { useEffect } from "react";
-import ButtonHandler from "@/components/btn-handler";
+import ButtonHandler from "@/components/Button/btn-handler";
 import Loader from "@/components/loader";
 import { detect, detectVideo } from "../utils/detect";
 import style from '../style/App.module.css';
-import "../style/App.css";
 import SvgIcon from "@/components/IconSteps/IconSteps";
 import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
@@ -102,32 +101,32 @@ export default function Home() {
           <div className={style.divider}/>
         </div>
       </div>
-
+        
+        {/* Esto vuela, se ejecuta la camara solamente y no muestra video... */}
+        
         <div className={style.content}>
-          <img
+          {/* <img
             src="#"
             ref={imageRef}
             onLoad={() => detect(imageRef.current, model, canvasRef.current)}
-          />
-          <video
-            autoPlay
-            muted
-            ref={cameraRef}
-            onPlay={() =>
-              detectVideo(cameraRef.current, model, canvasRef.current)
-            }
-          />
-          <canvas
+          /> */}
+         <video
+          autoPlay
+          muted
+          ref={cameraRef}
+          style={{ display: "none" }}
+          onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current)}
+        />
+
+          {/* <canvas
             width={model.inputShape[1]}
             height={model.inputShape[2]}
             ref={canvasRef}
-          />
+          /> */}
         </div>
 
         <ButtonHandler
-          imageRef={imageRef}
           cameraRef={cameraRef}
-          videoRef={videoRef}
         />
       </div>
     </div>

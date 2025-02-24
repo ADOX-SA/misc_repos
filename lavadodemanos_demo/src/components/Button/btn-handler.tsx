@@ -1,12 +1,17 @@
-import { useState, useRef } from "react";
-import { Webcam } from "../utils/webcam";
+import React, { useState } from "react";
+import { Webcam } from "../../utils/webcam";
+import style from './Button.module.css';
 
-const ButtonHandler = ({ cameraRef }) => {
+interface ButtonProps {
+  cameraRef: React.RefObject<null>;
+}
+
+const ButtonHandler: React.FC<ButtonProps>= ({ cameraRef }) => {
   const [streaming, setStreaming] = useState(null); // streaming state
   const webcam = new Webcam(); // webcam handler
 
   return (
-    <div className="btn-container">
+    <div className={style.button}>
       {/* Webcam Handler */}
       <button
         onClick={() => {
