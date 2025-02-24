@@ -1,8 +1,7 @@
 "use client";
-import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
-
 import React, { useRef, useState } from "react";
-import Webcam from "react-webcam";
+import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
+// import Webcam from "react-webcam";
 import * as tf from "@tensorflow/tfjs";
 import { useEffect } from "react";
 import ButtonHandler from "@/components/btn-handler";
@@ -12,10 +11,16 @@ import style from '../style/App.module.css';
 import "../style/App.css";
 import SvgIcon from "@/components/IconSteps/IconSteps";
 import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
-
+import labels from "../utils/labels.json";
 // import "@tensorflow/tfjs-backend-webgl";
 
 export default function Home() {
+  const time: number = 10;
+  const [timeIsUp, setTimeIsUp] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<boolean[]>(new Array(labels.length).fill(false));
+
+
+
   const [loading, setLoading] = useState({ loading: true, progress: 0 }); // loading state
   const [model, setModel] = useState({
     net: null,
@@ -51,6 +56,15 @@ export default function Home() {
       tf.dispose([warmupResults, dummyInput]); // cleanup memory
     });
   }, []);
+
+  const markStepAsCompleted = (stepIndex: number) => {
+    setCompletedSteps((prev) => {
+        const updatedSteps = [...prev];
+        updatedSteps[stepIndex] = true;
+        return updatedSteps;
+    });
+};
+
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
@@ -70,23 +84,26 @@ export default function Home() {
           {/* Iconos de pasos completados*/}
           {/* TODO:Mapear esto... */}
           <div className={style.IconSteps}>
-            <SvgIcon color="#5396ED"/>
-            <SvgIcon color="#5396ED"/>
-            <SvgIcon color="#5396ED"/>
-            <SvgIcon color="#AA4CF2"/>
-            <SvgIcon/>
-            <SvgIcon/>
-            <SvgIcon/>
+            {<div className={style.IconSteps}>
+              {labels.map((name, index) => (
+                <SvgIcon 
+                  key={index} 
+                  color={completedSteps[index] ? "#00FF00" : "#D9D9D9"} // Verde si está completo, gris si no
+                />
+              ))}
+            </div>
+
+            }
           </div>
           <p className={style.subTitles2}>Tiempo</p>
           {/* barra grafica de tiempo */}
-          <CircularProgressTime initialTime={16} size="180"/>
+          <CircularProgressTime initialTime={time} size="180" timeIsUp={setTimeIsUp}/>
           <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
           <div className={style.divider}/>
         </div>
       </div>
 
-        {/* <div className={style.content}>
+        <div className={style.content}>
           <img
             src="#"
             ref={imageRef}
@@ -111,7 +128,7 @@ export default function Home() {
           imageRef={imageRef}
           cameraRef={cameraRef}
           videoRef={videoRef}
-        /> */}
+        />
       </div>
     </div>
   );
