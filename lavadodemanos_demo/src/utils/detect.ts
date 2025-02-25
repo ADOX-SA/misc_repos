@@ -43,20 +43,20 @@ const preprocess = (
 };
 
 /**
- * Function run inference and do detection from source.
- * @param {HTMLImageElement|HTMLVideoElement} source
+ * Function to detect video from every source.
+ * @param {HTMLVideoElement} vidSource video source
  * @param {tf.GraphModel} model loaded YOLOv8 tensorflow.js model
  * @param {HTMLCanvasElement} canvasRef canvas reference
- * @param {VoidFunction} callback function to run after detection process
  */
-export const detect = async (
+
+export const detectAllClasses = async (
   source: HTMLImageElement | HTMLVideoElement,
   model: {
     net: tf.GraphModel;
     inputShape: number[];
   },
   canvasRef: HTMLCanvasElement,
-  callback: VoidFunction = () => {}
+  callback: (predicciones: { clase: string; score: number }[]) => void
 ) => {
   if (model == null || model.inputShape == undefined) return; // handle if model is not loaded
   const [modelWidth, modelHeight] = model.inputShape.slice(1, 3); // get model width and height
@@ -66,71 +66,71 @@ export const detect = async (
 
   // ACA ES LA PREDICCION
   //EJECUTA EL MODELO SOBRE LA IMAGEN PREPROCESSADA
+  if (!input) {
+    throw new Error("Input tensor is undefined");
+  }
   const res = model.net.execute(input) as tf.Tensor<tf.Rank>; // inference model
   // RES= [1, 11, 8400] 1 batch/ejemplo/imagen, 11 atributos por deteccion, 8400 detecciones
 
   input.dispose(); // libera de la memoria el tensor armado en preprocess, ya que no se usa mas y se pasa a ysar el res
+
   const transRes = res.transpose([0, 2, 1]); // transpose result [b, det, n] => [b, n, det]
-  console.log(transRes, "transRes", transRes.shape);
-  const boxes = tf.tidy(() => {
-    const w = transRes.slice([0, 0, 2], [-1, -1, 1]); // get width
-    const h = transRes.slice([0, 0, 3], [-1, -1, 1]); // get height
-    const x1 = tf.sub(transRes.slice([0, 0, 0], [-1, -1, 1]), tf.div(w, 2)); // x1
-    const y1 = tf.sub(transRes.slice([0, 0, 1], [-1, -1, 1]), tf.div(h, 2)); // y1
-    return tf
-      .concat(
-        [
-          y1,
-          x1,
-          tf.add(y1, h), //y2
-          tf.add(x1, w), //x2
-        ],
-        2
-      )
-      .squeeze();
-  }); // process boxes [y1, x1, y2, x2]
+  const rawScores = transRes.slice([0, 0, 4], [-1, -1, numClass]).squeeze(0); // #6 only squeeze axis 0 to handle only 1 class models
+  const claseScores1 = rawScores
+    .slice([0, 0], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
+  const claseScores2 = rawScores
+    .slice([0, 1], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
+  const claseScores3 = rawScores
+    .slice([0, 2], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
+  const claseScores4 = rawScores
+    .slice([0, 3], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
+  const claseScores5 = rawScores
+    .slice([0, 4], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
+  const claseScores6 = rawScores
+    .slice([0, 5], [-1, 1])
+    .flatten()
+    .max()
+    .arraySync();
 
-  const [scores, classes] = tf.tidy(() => {
-    // class scores
-    const rawScores = transRes.slice([0, 0, 4], [-1, -1, numClass]).squeeze(0); // #6 only squeeze axis 0 to handle only 1 class models
-    return [rawScores.max(1), rawScores.argMax(1)];
-  }); // get max scores and classes index
+  const predictions = [
+    { clase: labels[0], score: (claseScores1 * 100).toFixed(2) },
+    { clase: labels[1], score: (claseScores2 * 100).toFixed(2) },
+    { clase: labels[2], score: (claseScores3 * 100).toFixed(2) },
+    { clase: labels[3], score: (claseScores4 * 100).toFixed(2) },
+    { clase: labels[4], score: (claseScores5 * 100).toFixed(2) },
+    { clase: labels[5], score: (claseScores6 * 100).toFixed(2) },
+  ];
 
-  const nms = await tf.image.nonMaxSuppressionAsync(
-    boxes,
-    scores,
-    500,
-    0.45,
-    0.2
-  ); // NMS to filter boxes
+  callback(predictions);
 
-  const boxes_data = boxes.gather(nms, 0).dataSync(); // indexing boxes by nms index
-  const scores_data = scores.gather(nms, 0).dataSync(); // indexing scores by nms index
-  const classes_data = classes.gather(nms, 0).dataSync(); // indexing classes by nms index
-  renderBoxes(canvasRef, boxes_data, scores_data, classes_data, [
-    xRatio,
-    yRatio,
-  ]); // render boxes
-  tf.dispose([res, transRes, boxes, scores, classes, nms]); // clear memory
-
-  callback();
+  tf.dispose([res, transRes, rawScores]); // clear memory
 
   tf.engine().endScope(); // end of scoping
 };
 
-/**
- * Function to detect video from every source.
- * @param {HTMLVideoElement} vidSource video source
- * @param {tf.GraphModel} model loaded YOLOv8 tensorflow.js model
- * @param {HTMLCanvasElement} canvasRef canvas reference
- */
 export const detectVideo = (
   vidSource: HTMLVideoElement,
   model: {
     net: tf.GraphModel;
     inputShape: number[];
   },
-  canvasRef: HTMLCanvasElement
+  canvasRef: HTMLCanvasElement,
+  callback: (predicciones: { claseScores: string; score: number }[]) => void
 ) => {
   /**
    * Function to detect every frame from video
@@ -142,7 +142,8 @@ export const detectVideo = (
       return; // handle if source is closed
     }
 
-    detect(vidSource, model, canvasRef, () => {
+    detectAllClasses(vidSource, model, canvasRef, (e) => {
+      callback(e);
       requestAnimationFrame(detectFrame); // get another frame
     });
   };
