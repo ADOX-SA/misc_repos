@@ -11,25 +11,22 @@ import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
 
 export default function Home() {
-  const time: number = 15;
-  const allowedTrust: number = 60; // Confianza permitida
+  const time = 15; // Cantidad de segundos
+  const allowedTrust = 60; // Confianza permitida
   const [remainingTime, setRemainingTime] = useState(time);
-  
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  // A ver si con esto podemos para un poco las restas multiples con esto...
-  const [isCountingDown, setIsCountingDown] = useState(false);
-
   const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
-
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
   const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
 
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
+  const intervalRef = useRef(null); // Referencia para el intervalo
 
   const modelName = "hands_model";
 
+  // Cargar el modelo de TensorFlow.js
   useEffect(() => {
     let isMounted = true;
     tf.ready().then(async () => {
@@ -60,41 +57,51 @@ export default function Home() {
     };
   }, []);
 
-  // Efecto para actualizar el tiempo en base a predicciones
+  // Manejar el temporizador y la progresión de pasos
   useEffect(() => {
     if (predicciones.length > 0) {
-      //Esto encuentra la predicción con el score más alto...
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
 
-      console.log(`Mejor predicción: ${bestPrediction.clase} - ${bestPrediction.score}`);
-
-      // Si la predicción tiene suficiente score (≥ 60%) y es el paso actual, reducimos el tiempo en 1s.
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
-        
-        // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
-        if (stepIndex === currentStep && !isCountingDown) {
-          setIsCountingDown(true);
-          setInterval(() => {
-            setRemainingTime((prev) => Math.max(prev - 1, 0));
-          }, 1000); // Reducir tiempo sin que sea negativo
-          
-          if (remainingTime === 0 && currentStep < labels.length - 1) {
-            setIsCountingDown(false);
-            setCompletedSteps((prev) => {
-              const newSteps = [...prev];
-              newSteps[currentStep] = true;
-              return newSteps;
-            });
-            setCurrentStep((prev) => prev + 1);
-      
-            // Reiniciar el tiempo correctamente al cambiar de paso
-            setRemainingTime(time);
+
+        if (stepIndex === currentStep) {
+          // Iniciar el temporizador si no está activo
+          if (!intervalRef.current) {
+            intervalRef.current = setInterval(() => {
+              setRemainingTime((prev) => {
+                if (prev > 0) return prev - 1;
+                clearInterval(intervalRef.current); // Detener el intervalo
+                intervalRef.current = null;
+                return 0;
+              });
+            }, 1000);
           }
         }
       }
     }
+
+    // Limpiar el intervalo al desmontar o cambiar de paso
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [predicciones, currentStep]);
+
+  // Avanzar al siguiente paso cuando el tiempo llegue a cero
+  useEffect(() => {
+    if (remainingTime === 0 && currentStep < labels.length - 1) {
+      setCompletedSteps((prev) => {
+        const newSteps = [...prev];
+        newSteps[currentStep] = true;
+        return newSteps;
+      });
+      setCurrentStep((prev) => prev + 1);
+      setRemainingTime(time); // Reiniciar el temporizador
+    }
+  }, [remainingTime, currentStep]);
 
   return (
     <div className={style.centeredGrid}>
@@ -110,26 +117,26 @@ export default function Home() {
           <div className={style.columnContent2}>
             <img src="/LogoAdox.png" alt="Logo de ADOX" />
             <p className={style.title}>Control de lavado de manos</p>
-            <div className={style.divider}/>
+            <div className={style.divider} />
             <p className={style.subTitles1}>Pasos completados</p>
             <div className={style.IconSteps}>
               {labels.map((_, index) => (
-                <SvgIcon 
-                  key={index} 
+                <SvgIcon
+                  key={index}
                   color={
-                    completedSteps[index] 
-                      ? "#5396ED" 
-                      : index === currentStep 
+                    completedSteps[index]
+                      ? "#5396ED"
+                      : index === currentStep
                         ? "#AA4CF2"
                         : "#D9D9D9"
-                  } 
+                  }
                 />
               ))}
             </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
             <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
-            <div className={style.divider}/>
+            <div className={style.divider} />
           </div>
         </div>
         <div className={style.content}>
