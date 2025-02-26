@@ -61,7 +61,6 @@ export default function Home() {
 
   // Efecto para actualizar el tiempo en base a predicciones
   useEffect(() => {
-    let timer: NodeJS.Timeout;
     if (predicciones.length > 0) {
       //Esto encuentra la predicción con el score más alto...
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
@@ -74,15 +73,12 @@ export default function Home() {
         
         // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep) {
-          timer = setInterval(() => {
+          setInterval(() => {
             setRemainingTime((prev) => Math.max(prev - 1, 0));
           }, 1000); // Reducir tiempo sin que sea negativo
         }
       }
     }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
   }, [predicciones, currentStep]);
 
   useEffect(() => {
