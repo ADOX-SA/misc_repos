@@ -158,8 +158,8 @@ export default function Home() {
             </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
-            <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
-            <div className={style.divider} />
+            <p className={style.text}>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
+            {/* <div className={style.divider} /> */}
           </div>
         </div>
         <div className={style.content}>
