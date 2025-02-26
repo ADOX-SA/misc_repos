@@ -63,37 +63,34 @@ export default function Home() {
   // Efecto para actualizar el tiempo en base a predicciones
   useEffect(() => {
     if (predicciones.length > 0) {
-      const bestPrediction = predicciones.reduce(
-        (max, p) => (p.score > max.score ? p : max),
-        predicciones[0]
-      );
-  
+      //Esto encuentra la predicción con el score más alto...
+      const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
+
       console.log(`Mejor predicción: ${bestPrediction.clase} - ${bestPrediction.score}`);
-  
+
+      // Si la predicción tiene suficiente score (≥ 60%) y es el paso actual, reducimos el tiempo en 1s.
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
-  
+        
+        // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep && !isCountingDown) {
           setIsCountingDown(true);
-          const interval = setInterval(() => {
-            setRemainingTime((prev) => {
-              if (prev <= 1) {
-                clearInterval(interval);
-                setIsCountingDown(false);
-  
-                if (currentStep < labels.length - 1) {
-                  setCompletedSteps((prev) => {
-                    const newSteps = [...prev];
-                    newSteps[currentStep] = true;
-                    return newSteps;
-                  });
-                  setCurrentStep((prev) => prev + 1);
-                  setRemainingTime(time);
-                }
-              }
-              return Math.max(prev - 1, 0);
+          setInterval(() => {
+            setRemainingTime((prev) => Math.max(prev - 1, 0));
+          }, 1000); // Reducir tiempo sin que sea negativo
+          
+          if (remainingTime === 0 && currentStep < labels.length - 1) {
+            setIsCountingDown(false);
+            setCompletedSteps((prev) => {
+              const newSteps = [...prev];
+              newSteps[currentStep] = true;
+              return newSteps;
             });
-          }, 1000);
+            setCurrentStep((prev) => prev + 1);
+      
+            // Reiniciar el tiempo correctamente al cambiar de paso
+            setRemainingTime(time);
+          }
         }
       }
     }
