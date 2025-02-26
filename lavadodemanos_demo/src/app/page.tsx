@@ -61,6 +61,7 @@ export default function Home() {
 
   // Efecto para actualizar el tiempo en base a predicciones
   useEffect(() => {
+    let timer: NodeJS.Timeout;
     if (predicciones.length > 0) {
       //Esto encuentra la predicción con el score más alto...
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
@@ -73,10 +74,15 @@ export default function Home() {
         
         // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep) {
-          setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
+          timer = setInterval(() => {
+            setRemainingTime((prev) => Math.max(prev - 1, 0));
+          }, 1000); // Reducir tiempo sin que sea negativo
         }
       }
     }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
   }, [predicciones, currentStep]);
 
   useEffect(() => {
@@ -88,6 +94,8 @@ export default function Home() {
         return newSteps;
       });
       setCurrentStep((prev) => prev + 1);
+
+      // Reiniciar el tiempo correctamente al cambiar de paso
       setRemainingTime(time);
     }
   }, [remainingTime, currentStep]);
@@ -124,7 +132,7 @@ export default function Home() {
               ))}
             </div>
             <p className={style.subTitles2}>Tiempo</p>
-            <CircularProgressTime initialTime={remainingTime} size="180" />
+            <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
             <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
             <div className={style.divider}/>
           </div>
