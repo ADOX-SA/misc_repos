@@ -1,8 +1,7 @@
 "use client";
-import React, { useRef, useState } from "react";
-import "@tensorflow/tfjs-backend-webgl"; // set backend to webgl
+import React, { useRef, useState, useEffect } from "react";
+import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs";
-import { useEffect } from "react";
 import ButtonHandler from "@/components/Button/btn-handler";
 import Loader from "@/components/loader";
 import { detectVideo } from "../utils/detect";
@@ -13,11 +12,15 @@ import labels from "../utils/labels.json";
 
 export default function Home() {
   const time: number = 10;
+  const allowedTrust: number = 60; // Confianza permitida
   const [remainingTime, setRemainingTime] = useState(time);
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
   const [isDetecting, setIsDetecting] = useState(false);
-  const [validPredictionsCount, setValidPredictionsCount] = useState(0);
+
+  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
+
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
   const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
 
@@ -25,6 +28,7 @@ export default function Home() {
   const canvasRef = useRef(null);
 
   const modelName = "hands_model";
+
   useEffect(() => {
     let isMounted = true;
     tf.ready().then(async () => {
@@ -38,25 +42,56 @@ export default function Home() {
           },
         }
       );
-  
+
       const dummyInput = tf.ones(yolov8.inputs[0].shape || [1, 224, 224, 3]);
       const warmupResults = yolov8.execute(dummyInput);
-  
+
       if (isMounted) {
         setLoading({ loading: false, progress: 1 });
-        setModel({
-          net: yolov8,
-          inputShape: yolov8.inputs[0].shape,
-        });
+        setModel({ net: yolov8, inputShape: yolov8.inputs[0].shape });
       }
-  
+
       tf.dispose([warmupResults, dummyInput]);
     });
-  
+
     return () => {
       isMounted = false;
     };
   }, []);
+
+  // Efecto para actualizar el tiempo en base a predicciones
+  useEffect(() => {
+    if (predicciones.length > 0) {
+      //Esto encuentra la predicción con el score más alto...
+      const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
+
+      console.log(`Mejor predicción: ${bestPrediction.clase} - ${bestPrediction.score}`);
+
+      // Si la predicción tiene suficiente score (≥ 60%) y es el paso actual, reducimos el tiempo en 1s.
+      if (bestPrediction.score >= allowedTrust) {
+        const stepIndex = labels.indexOf(bestPrediction.clase);
+
+        console.log("stepIndex: ", stepIndex);
+        console.log("currentStep: ", currentStep);
+        
+        if (stepIndex === currentStep) {
+          setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
+        }
+      }
+    }
+  }, [predicciones, currentStep]);
+
+  useEffect(() => {
+    if (remainingTime === 0 && currentStep < labels.length - 1) {
+      setCompletedSteps((prev) => {
+        const newSteps = [...prev];
+        newSteps[currentStep] = true;
+        return newSteps;
+      });
+      setCurrentStep((prev) => prev + 1);
+      setRemainingTime(time);
+    }
+  }, [remainingTime, currentStep]);
   
 
   return (
@@ -65,87 +100,56 @@ export default function Home() {
         {loading.loading && (
           <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />
         )}
-      <div className={style.colum}>
+        <div className={style.colum}>
           <div className={style.columnContent1}>
-            <h1>Paso 4</h1>
-            <img src="/Pasos/Paso4.jpg" alt="Paso de lavado de mano" />
+            <h1>Paso {currentStep + 1}</h1>
+            <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
           </div>
-        <div className={style.columnContent2}>
-          <img src="/LogoAdox.png" alt="Logo de ADOX" />
-          <p className={style.title}>Control de lavado de manos</p>
-          <div className={style.divider}/>
-          <p className={style.subTitles1}>Pasos completados</p>
-          {/* Iconos de pasos completados*/}
-          {/* TODO:Mapear esto... */}
-          <div className={style.IconSteps}>
-            {labels.map((_, index) => (
-              <SvgIcon 
-                key={index} 
-                color={
-                  completedSteps[index] 
-                    ? "#5396ED" 
-                    : index === currentStep 
-                      ? "#AA4CF2"
-                      : "#D9D9D9"
-                } 
-              />
-            ))}
+          <div className={style.columnContent2}>
+            <img src="/LogoAdox.png" alt="Logo de ADOX" />
+            <p className={style.title}>Control de lavado de manos</p>
+            <div className={style.divider}/>
+            <p className={style.subTitles1}>Pasos completados</p>
+            <div className={style.IconSteps}>
+              {labels.map((_, index) => (
+                <SvgIcon 
+                  key={index} 
+                  color={
+                    completedSteps[index] 
+                      ? "#5396ED" 
+                      : index === currentStep 
+                        ? "#AA4CF2"
+                        : "#D9D9D9"
+                  } 
+                />
+              ))}
+            </div>
+            <p className={style.subTitles2}>Tiempo</p>
+            <CircularProgressTime initialTime={remainingTime} size="180" />
+            <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
+            <div className={style.divider}/>
           </div>
-
-          <p className={style.subTitles2}>Tiempo</p>
-          {/* barra grafica de tiempo */}
-          <CircularProgressTime initialTime={remainingTime} size="180" />
-          <p>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
-          <div className={style.divider}/>
         </div>
-      </div>        
-      <div className={style.content}>
+        <div className={style.content}>
           <video
             autoPlay
             muted
             ref={cameraRef}
-            onPlay={() => {
-              setIsDetecting(true);
+            onPlay={() =>
               detectVideo(
                 cameraRef.current,
                 model,
                 canvasRef.current,
                 (pred) => {
-                  const maxConfidence = Math.max(...pred.map(p => p.score * 100));
-
-                  if (maxConfidence >= 60) {
-                    setValidPredictionsCount(prev => prev + 1);
-
-                    if (validPredictionsCount + 1 >= 10) {
-                      setRemainingTime(prev => Math.max(prev - 1, 0));
-                      setValidPredictionsCount(0); // Reinicia el contador de predicciones exitosas
-                    }
-                  } else {
-                    setValidPredictionsCount(0); // Reinicia si no se alcanza el umbral
-                  }
-
-                  if (remainingTime <= 0) {
-                    setCompletedSteps(prev => {
-                      const updatedSteps = [...prev];
-                      updatedSteps[currentStep] = true;
-                      return updatedSteps;
-                    });
-
-                    setCurrentStep(prev => Math.min(prev + 1, labels.length - 1));
-                    setRemainingTime(time);
-                  }
+                  setPredicciones(pred);
                 }
-              );
-            }}
+              )
+            }
             style={{ width: 0, height: 0 }}
           />
         </div>
-
-        <ButtonHandler
-          cameraRef={cameraRef}
-        />
+        <ButtonHandler cameraRef={cameraRef} />
       </div>
     </div>
   );
 }
-
