@@ -81,7 +81,7 @@ export default function Home() {
 
   useEffect(() => {
     // Si el tiempo actual es de cero ó 
-    if (remainingTime === 0 || currentStep < labels.length - 1) {
+    if (remainingTime === 0 && currentStep < labels.length - 1) {
       setCompletedSteps((prev) => {
         const newSteps = [...prev];
         newSteps[currentStep] = true;
