@@ -63,16 +63,16 @@ export default function Home() {
   // Efecto para actualizar el tiempo en base a predicciones
   useEffect(() => {
     if (predicciones.length > 0) {
-      //Esto encuentra la predicción con el score más alto...
-      const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
-
+      const bestPrediction = predicciones.reduce(
+        (max, p) => (p.score > max.score ? p : max),
+        predicciones[0]
+      );
+  
       console.log(`Mejor predicción: ${bestPrediction.clase} - ${bestPrediction.score}`);
-
-      // Si la predicción tiene suficiente score (≥ 60%) y es el paso actual, reducimos el tiempo en 1s.
+  
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
-        
-        // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
+  
         if (stepIndex === currentStep && !isCountingDown) {
           setIsCountingDown(true);
           const interval = setInterval(() => {
