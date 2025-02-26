@@ -17,7 +17,8 @@ export default function Home() {
   
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  const [isDetecting, setIsDetecting] = useState(false);
+  // A ver si con esto podemos para un poco las restas multiples con esto...
+  const [isCountingDown, setIsCountingDown] = useState(false);
 
   const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
 
@@ -72,26 +73,31 @@ export default function Home() {
         const stepIndex = labels.indexOf(bestPrediction.clase);
         
         // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
-        if (stepIndex === currentStep) {
-          setInterval(() => {
-            setRemainingTime((prev) => Math.max(prev - 1, 0));
-          }, 1000); // Reducir tiempo sin que sea negativo
-          
-          if (remainingTime === 0 && currentStep < labels.length - 1) {
-            setCompletedSteps((prev) => {
-              const newSteps = [...prev];
-              newSteps[currentStep] = true;
-              return newSteps;
+        if (stepIndex === currentStep && !isCountingDown) {
+          setIsCountingDown(true);
+          const interval = setInterval(() => {
+            setRemainingTime((prev) => {
+              if (prev <= 1) {
+                clearInterval(interval);
+                setIsCountingDown(false);
+  
+                if (currentStep < labels.length - 1) {
+                  setCompletedSteps((prev) => {
+                    const newSteps = [...prev];
+                    newSteps[currentStep] = true;
+                    return newSteps;
+                  });
+                  setCurrentStep((prev) => prev + 1);
+                  setRemainingTime(time);
+                }
+              }
+              return Math.max(prev - 1, 0);
             });
-            setCurrentStep((prev) => prev + 1);
-      
-            // Reiniciar el tiempo correctamente al cambiar de paso
-            setRemainingTime(time);
-          }
+          }, 1000);
         }
       }
     }
-  }, [predicciones, currentStep, remainingTime]);
+  }, [predicciones, currentStep]);
 
   return (
     <div className={style.centeredGrid}>
