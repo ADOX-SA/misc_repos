@@ -73,7 +73,6 @@ export default function Home() {
         
         // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep) {
-          if()
           setInterval(() => {
             setRemainingTime((prev) => Math.max(prev - 1, 0));
           }, 1000); // Reducir tiempo sin que sea negativo
