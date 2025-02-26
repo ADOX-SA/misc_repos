@@ -11,7 +11,7 @@ import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
 
 export default function Home() {
-  const time: number = 10;
+  const time: number = 15;
   const allowedTrust: number = 60; // Confianza permitida
   const [remainingTime, setRemainingTime] = useState(time);
   
@@ -73,16 +73,15 @@ export default function Home() {
         
         // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep) {
-          setTimeout(() => {
-            setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
-          }, 1000); // Espera 1 segundo antes de restar :D
+          setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
         }
       }
     }
   }, [predicciones, currentStep]);
 
   useEffect(() => {
-    if (remainingTime === 0 && currentStep < labels.length - 1) {
+    // Si el tiempo actual es de cero ó 
+    if (remainingTime === 0 || currentStep < labels.length - 1) {
       setCompletedSteps((prev) => {
         const newSteps = [...prev];
         newSteps[currentStep] = true;
