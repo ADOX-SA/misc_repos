@@ -4,24 +4,14 @@ import styles from './TimeProgress.module.css';
 interface CircularProgressProps {
     initialTime: number;
     size?: string;
-    timeIsUp:React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="100", timeIsUp}) => {
+const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="100"}) => {
     const [time, setTime] = useState(initialTime);
 
     useEffect(() => {
-        if (time > 0) {
-        const timer = setInterval(() => {
-            setTime((prev) => prev - 1);
-        }, 1000);
-        return () => clearInterval(timer);
-        } else {
-            if(time == 0){
-                timeIsUp(true);
-            }
-        }
-    }, [time]);
+        setTime(initialTime); // Se actualiza cuando cambia initialTime
+    }, [initialTime]);
 
     const radius = 40;
     const circumference = 2 * Math.PI * radius;
@@ -30,12 +20,7 @@ const CircularProgress: React.FC<CircularProgressProps> = ({ initialTime, size="
     return (
         <div className={styles.progressContainer}>
         <svg width={size} height={size} viewBox="0 0 100 100">
-            <circle
-            className={styles.backgroundCircle}
-            cx="50"
-            cy="50"
-            r={radius}
-            />
+            <circle className={styles.backgroundCircle} cx="50" cy="50" r={radius} />
             <circle
             className={styles.progressCircle}
             cx="50"
