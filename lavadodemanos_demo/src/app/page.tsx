@@ -67,7 +67,7 @@ export default function Home() {
           if (prev > 0) return prev - 1;
           return 0;
         });
-      }, 1000);
+      }, 500);
     } else {
       // Detener el intervalo si el temporizador no está activo
       if (intervalRef.current) {
@@ -90,7 +90,7 @@ export default function Home() {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
 
       console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
-      
+
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
 
