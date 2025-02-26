@@ -76,49 +76,64 @@ export const detectAllClasses = async (
 
   const transRes = res.transpose([0, 2, 1]); // transpose result [b, det, n] => [b, n, det]
   const rawScores = transRes.slice([0, 0, 4], [-1, -1, numClass]).squeeze(0); // #6 only squeeze axis 0 to handle only 1 class models
-  const claseScores1 = rawScores
-    .slice([0, 0], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
-  const claseScores2 = rawScores
-    .slice([0, 1], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
-  const claseScores3 = rawScores
-    .slice([0, 2], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
-  const claseScores4 = rawScores
-    .slice([0, 3], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
-  const claseScores5 = rawScores
-    .slice([0, 4], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
-  const claseScores6 = rawScores
-    .slice([0, 5], [-1, 1])
-    .flatten()
-    .max()
-    .arraySync();
+  // const scores = rawScores
 
-  const predictions = [
-    { clase: labels[0], score: (claseScores1 * 100).toFixed(2) },
-    { clase: labels[1], score: (claseScores2 * 100).toFixed(2) },
-    { clase: labels[2], score: (claseScores3 * 100).toFixed(2) },
-    { clase: labels[3], score: (claseScores4 * 100).toFixed(2) },
-    { clase: labels[4], score: (claseScores5 * 100).toFixed(2) },
-    { clase: labels[5], score: (claseScores6 * 100).toFixed(2) },
-  ];
+  const scores = [] as number[];
 
-  callback(predictions);
+  for (let i = 0; i < numClass; i++) {
+    scores.push(
+      rawScores.slice([0, i], [-1, 1]).flatten().max().arraySync() as number
+    );
+  }
 
-  tf.dispose([res, transRes, rawScores]); // clear memory
+  const predictionss = scores.map((score, i) => ({
+    clase: labels[i],
+    score: Math.ceil(score * 100),
+  }));
+
+  // const claseScores1 = rawScores
+  //   .slice([0, 0], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+  // const claseScores2 = rawScores
+  //   .slice([0, 1], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+  // const claseScores3 = rawScores
+  //   .slice([0, 2], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+  // const claseScores4 = rawScores
+  //   .slice([0, 3], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+  // const claseScores5 = rawScores
+  //   .slice([0, 4], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+  // const claseScores6 = rawScores
+  //   .slice([0, 5], [-1, 1])
+  //   .flatten()
+  //   .max()
+  //   .arraySync();
+
+  // const predictions = [
+  //   { clase: labels[0], score: (claseScores1 * 100).toFixed(2) },
+  //   { clase: labels[1], score: Math.ceil(claseScores2 * 100) },
+  //   { clase: labels[2], score: (claseScores3 * 100).toFixed(2) },
+  //   { clase: labels[3], score: (claseScores4 * 100).toFixed(2) },
+  //   { clase: labels[4], score: (claseScores5 * 100).toFixed(2) },
+  //   { clase: labels[5], score: (claseScores6 * 100).toFixed(2) },
+  // ];
+
+  callback(predictionss);
+
+  tf.dispose([res, transRes, rawScores, input]); // cleanup memory
 
   tf.engine().endScope(); // end of scoping
 };
