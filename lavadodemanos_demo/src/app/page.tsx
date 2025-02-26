@@ -70,12 +70,12 @@ export default function Home() {
       // Si la predicción tiene suficiente score (≥ 60%) y es el paso actual, reducimos el tiempo en 1s.
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
-
-        console.log("stepIndex: ", stepIndex);
-        console.log("currentStep: ", currentStep);
         
+        // Si stepIndex es igual a currentStep, significa que la persona está haciendo el movimiento correcto y se reduce el tiempo.
         if (stepIndex === currentStep) {
-          setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
+          setTimeout(() => {
+            setRemainingTime((prev) => Math.max(prev - 1, 0)); // Reducir tiempo sin que sea negativo
+          }, 1000); // Espera 1 segundo antes de restar :D
         }
       }
     }
