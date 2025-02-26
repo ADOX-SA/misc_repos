@@ -15,7 +15,7 @@ export default function Home() {
   const allowedTrust = 60; // Confianza permitida
   const [remainingTime, setRemainingTime] = useState(time);
   const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
-  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
+  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // [false, false, false, false, false, false]
   const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
   const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
@@ -67,7 +67,7 @@ export default function Home() {
           if (prev > 0) return prev - 1;
           return 0;
         });
-      }, 500);
+      }, 500); // Intervalo de medio segundo...
     } else {
       // Detener el intervalo si el temporizador no está activo
       if (intervalRef.current) {
@@ -88,7 +88,6 @@ export default function Home() {
   useEffect(() => {
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
-
       console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
 
       if (bestPrediction.score >= allowedTrust) {
