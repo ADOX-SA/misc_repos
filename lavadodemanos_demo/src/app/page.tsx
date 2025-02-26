@@ -76,26 +76,22 @@ export default function Home() {
           setInterval(() => {
             setRemainingTime((prev) => Math.max(prev - 1, 0));
           }, 1000); // Reducir tiempo sin que sea negativo
+          
+          if (remainingTime === 0 && currentStep < labels.length - 1) {
+            setCompletedSteps((prev) => {
+              const newSteps = [...prev];
+              newSteps[currentStep] = true;
+              return newSteps;
+            });
+            setCurrentStep((prev) => prev + 1);
+      
+            // Reiniciar el tiempo correctamente al cambiar de paso
+            setRemainingTime(time);
+          }
         }
       }
     }
-  }, [predicciones, currentStep]);
-
-  useEffect(() => {
-    // Si el tiempo actual es de cero ó 
-    if (remainingTime === 0 && currentStep < labels.length - 1) {
-      setCompletedSteps((prev) => {
-        const newSteps = [...prev];
-        newSteps[currentStep] = true;
-        return newSteps;
-      });
-      setCurrentStep((prev) => prev + 1);
-
-      // Reiniciar el tiempo correctamente al cambiar de paso
-      setRemainingTime(time);
-    }
-  }, [remainingTime]);
-  
+  }, [predicciones, currentStep, remainingTime]);
 
   return (
     <div className={style.centeredGrid}>
