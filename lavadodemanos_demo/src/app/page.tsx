@@ -105,27 +105,45 @@ export default function Home() {
     }
   }, [predicciones, currentStep]);
 
-  // Avanzar al siguiente paso cuando el tiempo llegue a cero
-  useEffect(() => {
-    if (remainingTime === 0 && currentStep < labels.length - 1) {
-      // Detener el temporizador
-      setIsTimerRunning(false);
+  // // Avanzar al siguiente paso cuando el tiempo llegue a cero
+  // useEffect(() => {
+  //   if (remainingTime === 0 && currentStep <= labels.length - 1) {
+  //     // Detener el temporizador
+  //     setIsTimerRunning(false);
 
-      // Marcar el paso actual como completado
+  //     // Marcar el paso actual como completado
+  //     setCompletedSteps((prev) => {
+  //       const newSteps = [...prev];
+  //       newSteps[currentStep] = true;
+  //       return newSteps;
+  //     });
+
+  //     // Avanzar al siguiente paso
+  //     setCurrentStep((prev) => prev + 1);
+
+  //     // Reiniciar el temporizador
+  //     setRemainingTime(time);
+  //   }
+  // }, [remainingTime, currentStep]);
+
+  useEffect(() => {
+    if (remainingTime === 0) {
+      setIsTimerRunning(false);
+  
       setCompletedSteps((prev) => {
         const newSteps = [...prev];
         newSteps[currentStep] = true;
         return newSteps;
       });
-
-      // Avanzar al siguiente paso
-      setCurrentStep((prev) => prev + 1);
-
-      // Reiniciar el temporizador
-      setRemainingTime(time);
+  
+      // Solo avanzar si NO estamos en el último paso
+      if (currentStep < labels.length - 1) {
+        setCurrentStep((prev) => prev + 1);
+        setRemainingTime(time);
+      }
     }
-  }, [remainingTime, currentStep]);
-
+  }, [remainingTime, currentStep, labels.length]);
+  
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
