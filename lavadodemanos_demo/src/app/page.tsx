@@ -105,27 +105,6 @@ export default function Home() {
     }
   }, [predicciones, currentStep]);
 
-  // // Avanzar al siguiente paso cuando el tiempo llegue a cero
-  // useEffect(() => {
-  //   if (remainingTime === 0 && currentStep <= labels.length - 1) {
-  //     // Detener el temporizador
-  //     setIsTimerRunning(false);
-
-  //     // Marcar el paso actual como completado
-  //     setCompletedSteps((prev) => {
-  //       const newSteps = [...prev];
-  //       newSteps[currentStep] = true;
-  //       return newSteps;
-  //     });
-
-  //     // Avanzar al siguiente paso
-  //     setCurrentStep((prev) => prev + 1);
-
-  //     // Reiniciar el temporizador
-  //     setRemainingTime(time);
-  //   }
-  // }, [remainingTime, currentStep]);
-
   useEffect(() => {
     if (remainingTime === 0) {
       setIsTimerRunning(false);
@@ -143,6 +122,14 @@ export default function Home() {
       }
     }
   }, [remainingTime, currentStep, labels.length]);
+  
+  useEffect(() => {
+    if (cameraRef.current && model.net) {
+      detectVideo(cameraRef.current, model, canvasRef.current, (pred) => {
+        setPredicciones(pred);
+      });
+    }
+  }, [model.net]); // Solo ejecuta cuando el modelo cambia o este cargado.
   
   return (
     <div className={style.centeredGrid}>
@@ -181,22 +168,7 @@ export default function Home() {
           </div>
         </div>
         <div className={style.content}>
-          <video
-            autoPlay
-            muted
-            ref={cameraRef}
-            onPlay={() =>
-              detectVideo(
-                cameraRef.current,
-                model,
-                canvasRef.current,
-                (pred) => {
-                  setPredicciones(pred);
-                }
-              )
-            }
-            style={{ width: 0, height: 0 }}
-          />
+        <video autoPlay muted ref={cameraRef} style={{ width: 0, height: 0 }} />
         </div>
         <ButtonHandler cameraRef={cameraRef} />
       </div>
