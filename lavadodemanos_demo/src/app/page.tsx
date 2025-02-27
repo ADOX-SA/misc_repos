@@ -24,6 +24,8 @@ export default function Home() {
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null); // Referencia para el intervalo
+  const animationFrameRef = useRef(null); // Referencia para requestAnimationFrame
+  const prediccionesRef = useRef(predicciones); // Referencia para las predicciones
 
   const modelName = "hands_model";
 
@@ -67,7 +69,8 @@ export default function Home() {
           if (prev > 0) return prev - 1;
           return 0;
         });
-      }, 500); // Intervalo de medio segundo...
+        console.log("Tiempo restado -1: ", remainingTime);
+      }); // Intervalo de medio segundo...
     } else {
       // Detener el intervalo si el temporizador no está activo
       if (intervalRef.current) {
@@ -88,19 +91,27 @@ export default function Home() {
   useEffect(() => {
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
+      
       console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
-
+      
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
 
+        console.log("stepIndex: ",stepIndex);
+        
         // Si la predicción coincide con el paso actual, activar el temporizador
         if (stepIndex === currentStep) {
           setIsTimerRunning(true);
+          
+          console.log("SetIsTimerRunning en True: ", isTimerRunning);
+
         } else {
           setIsTimerRunning(false);
+          console.log("SetIsTimerRunning en False: ", isTimerRunning);
         }
       } else {
         setIsTimerRunning(false);
+        console.log("SetIsTimerRunning en False: ", isTimerRunning);
       }
     }
   }, [predicciones, currentStep]);
@@ -108,7 +119,8 @@ export default function Home() {
   useEffect(() => {
     if (remainingTime === 0) {
       setIsTimerRunning(false);
-  
+      console.log("SetIsTimerRunning en False: ", isTimerRunning);
+      
       setCompletedSteps((prev) => {
         const newSteps = [...prev];
         newSteps[currentStep] = true;
@@ -122,7 +134,41 @@ export default function Home() {
       }
     }
   }, [remainingTime, currentStep, labels.length]);
-  
+
+  // Inicializar detectVideo solo cuando el modelo esté listo y el video esté en reproducción
+  useEffect(() => {
+    if (!loading.loading && cameraRef.current && model.net) {
+      const detectFrame = async () => {
+        if (cameraRef.current && cameraRef.current.readyState === 4) { // Verificar si el video está listo
+          await detectVideo(
+            cameraRef.current,
+            model,
+            canvasRef.current,
+            (pred) => {
+              // Solo actualizar el estado si las predicciones cambian significativamente
+              if (JSON.stringify(pred) !== JSON.stringify(prediccionesRef.current)) {
+                prediccionesRef.current = pred; // Actualizar la referencia
+                setPredicciones(pred); // Actualizar el estado
+              }
+            }
+          );
+        }
+        animationFrameRef.current = requestAnimationFrame(detectFrame); // Siguiente fotograma
+      };
+
+      cameraRef.current.onplay = () => {
+        detectFrame(); // Iniciar la detección cuando el video comience a reproducirse
+      };
+    }
+
+    // Limpiar requestAnimationFrame al desmontar
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [loading.loading, model]);
+
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
@@ -156,7 +202,6 @@ export default function Home() {
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
             <p className={style.text}>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
-            {/* <div className={style.divider} /> */}
           </div>
         </div>
         <div className={style.content}>
@@ -164,20 +209,6 @@ export default function Home() {
             autoPlay
             muted
             ref={cameraRef}
-            onPlay={() =>
-              //detectVideo llama constantemente a la función de actualización setPredicciones, 
-              // entonces cada vez que cambie predicciones, 
-              // el componente se vuelve a renderizar y detectVideo vuelve a ejecutarse, 
-              // creando un bucle infinito. Eso es lo que estaria pasando la pregunta es como resuelvo esto. D:
-              detectVideo(
-                cameraRef.current,
-                model,
-                canvasRef.current,
-                (pred) => {
-                  setPredicciones(pred);
-                }
-              )
-            }
             style={{ width: 0, height: 0 }}
           />
         </div>
