@@ -145,20 +145,25 @@ export default function Home() {
           }
           animationFrameRef.current = requestAnimationFrame(detectFrame); // Siguiente fotograma
         };
-  
+    
         cameraRef.current.onplay = () => {
           detectFrame(); // Iniciar la detección cuando el video comience a reproducirse
         };
+    
+        // Limpiar recursos al desmontar
+        return () => {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+          }
+          if (cameraRef.current && cameraRef.current.srcObject) {
+            const stream = cameraRef.current.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop()); // Detener todas las pistas de la cámara
+          }
+        };
       }
-  
-      // Limpiar requestAnimationFrame al desmontar
-      return () => {
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-      };
     }, [loading.loading, model]);
-  
+    
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
