@@ -24,6 +24,7 @@ export default function Home() {
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null); // Referencia para el intervalo
+  const detectVideoRef = useRef(null); // Referencia para detectVideo
 
   const modelName = "hands_model";
 
@@ -122,7 +123,27 @@ export default function Home() {
       }
     }
   }, [remainingTime, currentStep, labels.length]);
-  
+
+  // Inicializar detectVideo solo cuando el modelo esté listo y el video esté en reproducción
+  useEffect(() => {
+    if (!loading.loading && cameraRef.current && model.net) {
+      detectVideoRef.current = () => {
+        detectVideo(
+          cameraRef.current,
+          model,
+          canvasRef.current,
+          (pred) => {
+            setPredicciones(pred);
+          }
+        );
+      };
+
+      cameraRef.current.onplay = () => {
+        detectVideoRef.current();
+      };
+    }
+  }, [loading.loading, model]);
+
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
@@ -164,20 +185,6 @@ export default function Home() {
             autoPlay
             muted
             ref={cameraRef}
-            onPlay={() =>
-              //detectVideo llama constantemente a la función de actualización setPredicciones, 
-              // entonces cada vez que cambie predicciones, 
-              // el componente se vuelve a renderizar y detectVideo vuelve a ejecutarse, 
-              // creando un bucle infinito. Eso es lo que estaria pasando la pregunta es como resuelvo esto. D:
-              detectVideo(
-                cameraRef.current,
-                model,
-                canvasRef.current,
-                (pred) => {
-                  setPredicciones(pred);
-                }
-              )
-            }
             style={{ width: 0, height: 0 }}
           />
         </div>
