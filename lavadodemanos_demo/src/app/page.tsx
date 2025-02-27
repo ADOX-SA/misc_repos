@@ -12,7 +12,7 @@ import labels from "../utils/labels.json";
 
 export default function Home() {
   const time = 15; // Cantidad de segundos
-  const allowedTrust = 60; // Confianza permitida
+  const allowedTrust = 50; // Confianza permitida
   const [remainingTime, setRemainingTime] = useState(time);
   const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // [false, false, false, false, false, false]
