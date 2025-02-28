@@ -1,4 +1,14 @@
+<<<<<<< HEAD
+<<<<<<<< HEAD:lavadodemanos_demo/src/style/App.module.css
 .App {
+=======
+.centeredGrid {
+  display: grid;
+  place-items: center;
+}
+
+.app {
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
   height: 100%;
   padding: 0 10px;
   position: relative;
@@ -8,11 +18,16 @@
   align-items: center;
 }
 
+<<<<<<< HEAD
 .App > * {
+=======
+.app > * {
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
   margin: 3px 0;
 }
 
 .header {
+<<<<<<< HEAD
   text-align: center;
 }
 
@@ -28,6 +43,47 @@
 }
 
 .content img {
+=======
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center; 
+  text-align: center; 
+  width: 100%;
+  padding: 20px;
+  background-color: #191919; 
+  color: #EFEFEF;
+  font-family: 'Roboto', sans-serif; 
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header img {
+  width: 80px; 
+  height: auto; 
+  margin-bottom: 10px;
+}
+
+.header p {
+  font-size: 20px;
+  margin: 5px 0;
+}
+
+.header .description {
+  font-size: 16px;
+  font-weight: 300;
+  max-width: 600px;
+  color: #BBBBBB;
+}
+
+.code {
+  padding: 5px;
+  color: greenyellow;
+  border-radius: 5px;
+}
+
+.content > img {
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
   display: none;
   width: 100%;
   max-width: 720px;
@@ -35,7 +91,11 @@
   border-radius: 10px;
 }
 
+<<<<<<< HEAD
 .content video {
+=======
+.content > video {
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
   display: none;
   width: 100%;
   max-width: 720px;
@@ -47,7 +107,11 @@
   position: relative;
 }
 
+<<<<<<< HEAD
 .content canvas {
+=======
+.content > canvas {
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
   position: absolute;
   top: 0;
   left: 0;
@@ -55,6 +119,7 @@
   height: 100%;
 }
 
+<<<<<<< HEAD
 .button {
   text-decoration: none;
   color: white;
@@ -71,3 +136,24 @@
   background-color: white;
   border: 2px solid black;
 }
+========
+button {
+    text-decoration: none;
+    color: white;
+    background-color: black;
+    border: 2px solid black;
+    margin: 0 5px;
+    padding: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    color: black;
+    background-color: white;
+    border: 2px solid black;
+}
+>>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd:lavadodemanos_demo/src/style/App.css
+=======
+
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd

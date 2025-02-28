@@ -8,7 +8,12 @@ import { useEffect } from "react";
 import ButtonHandler from "@/components/btn-handler";
 import Loader from "@/components/loader";
 import { detect, detectVideo } from "../utils/detect";
+<<<<<<< HEAD
 import style from "../style/App.module.css";
+=======
+import style from '../style/App.module.css';
+import "../style/App.css";
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
 
 // import "@tensorflow/tfjs-backend-webgl";
 
@@ -48,6 +53,7 @@ export default function Home() {
     });
   }, []);
   return (
+<<<<<<< HEAD
     <div className="grid place-items-center">
       <div className={style.App}>
         {loading.loading && (
@@ -62,6 +68,23 @@ export default function Home() {
           </p>
           <p>
             Servicio : <code className={style.code}>{modelName}</code>
+=======
+    <div className={style.centeredGrid}>
+      <div className={style.app}>
+        {loading.loading && (
+          <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />
+        )}
+        <div className={style.header}>
+          <img src="/LogoAdox.png" alt="Logo de ADOX" />
+
+          <p>¡Bienvenido a ADOX HandWash AI! 👏</p>
+          <p className={style.description}>
+            Este sistema inteligente analiza el lavado de manos en tiempo real, 
+            detectando movimientos y asegurando un proceso adecuado.
+          </p>
+          <p>
+            Modelo de servicio utilizado: <code className={style.code}>{modelName}</code>
+>>>>>>> 0a412e8683f87d9ed5ee4382002805d177dc14cd
           </p>
         </div>
 

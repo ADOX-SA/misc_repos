@@ -11,10 +11,10 @@
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",
     "next": "15.1.4",
+    "normalize.css": "^8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-webcam": "^7.2.0",
-    "normalize.css": "^8.0.1"
+    "react-webcam": "^7.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
