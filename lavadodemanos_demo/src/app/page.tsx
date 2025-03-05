@@ -108,8 +108,12 @@ export default function Home() {
     if (remainingTime === 0 && timerStarted) {
       if (hits >= requiredHits) {
         console.log(`Paso ${currentStep + 1} completado correctamente.`);
-        // Sonido success
-        playSound();
+        
+        // Solo reproducir el sonido si el paso no ha sido completado previamente
+        if (!completedSteps[currentStep]) {
+          playSound();
+        };
+
         setCompletedSteps((prev) => {
           const newSteps = [...prev];
           newSteps[currentStep] = true;
