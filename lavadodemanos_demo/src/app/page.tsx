@@ -29,7 +29,6 @@ export default function Home() {
   const canvasRef = useRef(null);
   const intervalRef = useRef(null); // Referencia para el intervalo
   const webcam = new Webcam(); // Instancia de Webcam
-
   const modelName = "hands_model";
 
   // Cargar el modelo de TensorFlow.js
@@ -71,7 +70,7 @@ export default function Home() {
           if (prev > 0) return prev - 1;
           return 0;
         });
-      });
+      }, 1000); // Intervalo de 1 segundo
     }
 
     // Limpiar el intervalo al desmontar o cuando el temporizador se detiene
@@ -84,9 +83,6 @@ export default function Home() {
 
   // Manejar las predicciones y contar aciertos
   useEffect(() => {
-
-    console.log("Tamaño del label: ",predicciones.length);
-    
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
       console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
@@ -148,6 +144,12 @@ export default function Home() {
           webcam.close(cameraRef.current); // Cerrar la cámara
           cameraRef.current.style.display = "none"; // Ocultar la cámara
           setStreaming(null); // Reiniciar el estado de streaming
+
+          // Limpiar el canvas cuando se cierra la cámara
+          if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext("2d");
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          }
         }
       }
     };
@@ -213,6 +215,7 @@ export default function Home() {
             }
             style={{ width: 0, height: 0 }}
           />
+          <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
         </div>
       </div>
     </div>
