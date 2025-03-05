@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs";
-import ButtonHandler from "@/components/Button/btn-handler";
+import { Webcam } from "../utils/webcam";
 import Loader from "@/components/loader";
 import { detectVideo } from "../utils/detect";
 import style from '../style/App.module.css';
@@ -22,10 +22,12 @@ export default function Home() {
   const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
   const [hits, setHits] = useState(0); // Contador de aciertos
   const [timerStarted, setTimerStarted] = useState(false); // Estado para controlar si el temporizador ha comenzado
+  const [streaming, setStreaming] = useState(null); // Estado para controlar si la cámara está activa
 
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
   const intervalRef = useRef(null); // Referencia para el intervalo
+  const webcam = new Webcam(); // Instancia de Webcam
 
   const modelName = "hands_model";
 
@@ -128,6 +130,31 @@ export default function Home() {
     }
   }, [remainingTime, currentStep, hits, timerStarted]);
 
+    // Manejador de eventos de teclado
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key === "Enter") {
+        if (streaming === null) {
+          webcam.open(cameraRef.current); // Abrir la cámara
+          cameraRef.current.style.display = "block"; // Mostrar la cámara
+          setStreaming("camera"); // Establecer el estado de streaming
+        } else if (streaming === "camera") {
+          webcam.close(cameraRef.current); // Cerrar la cámara
+          cameraRef.current.style.display = "none"; // Ocultar la cámara
+          setStreaming(null); // Reiniciar el estado de streaming
+        }
+      }
+    };
+
+    // Agregar el manejador de eventos al documento
+    document.addEventListener("keydown", handleKeyPress);
+
+    // Limpiar el manejador de eventos al desmontar el componente
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, [streaming]);
+
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
@@ -182,7 +209,6 @@ export default function Home() {
             style={{ width: 0, height: 0 }}
           />
         </div>
-        <ButtonHandler cameraRef={cameraRef} />
       </div>
     </div>
   );
