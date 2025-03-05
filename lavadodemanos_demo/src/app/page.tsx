@@ -9,6 +9,7 @@ import style from '../style/App.module.css';
 import SvgIcon from "@/components/IconSteps/IconSteps";
 import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
+import { capitalizeFirstLetter } from "@/utils/func.utils";
 
 export default function Home() {
   const time = 15; // Cantidad de segundos
@@ -163,8 +164,7 @@ export default function Home() {
         )}
         <div className={style.colum}>
           <div className={style.columnContent1}>
-            {/* Usar funcion para hacer la primera letra mayuscula */}
-            <h1>{labels[currentStep]}</h1>
+            <h1>{capitalizeFirstLetter(labels[currentStep])}</h1>
             <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
           </div>
           <div className={style.columnContent2}>
