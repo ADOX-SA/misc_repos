@@ -136,7 +136,8 @@ export default function Home() {
         )}
         <div className={style.colum}>
           <div className={style.columnContent1}>
-            <h1>Paso {currentStep + 1}</h1>
+            {/* Usar funcion para hacer la primera letra mayuscula */}
+            <h1>{labels[currentStep]}</h1>
             <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
           </div>
           <div className={style.columnContent2}>
