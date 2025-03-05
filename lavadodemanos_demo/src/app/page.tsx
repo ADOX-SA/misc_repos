@@ -71,7 +71,7 @@ export default function Home() {
           if (prev > 0) return prev - 1;
           return 0;
         });
-      }, 1000); // Intervalo de 1 segundo
+      });
     }
 
     // Limpiar el intervalo al desmontar o cuando el temporizador se detiene
@@ -84,6 +84,9 @@ export default function Home() {
 
   // Manejar las predicciones y contar aciertos
   useEffect(() => {
+
+    console.log("Tamaño del label: ",predicciones.length);
+    
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
       console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
@@ -133,7 +136,7 @@ export default function Home() {
     }
   }, [remainingTime, currentStep, hits, timerStarted]);
 
-    // Manejador de eventos de teclado
+  // Manejador de eventos de teclado
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (event.key === "Enter") {
