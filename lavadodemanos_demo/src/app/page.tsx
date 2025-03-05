@@ -9,7 +9,7 @@ import style from '../style/App.module.css';
 import SvgIcon from "@/components/IconSteps/IconSteps";
 import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
-import { capitalizeFirstLetter } from "@/utils/func.utils";
+import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 
 export default function Home() {
   const time = 15; // Cantidad de segundos
@@ -109,6 +109,8 @@ export default function Home() {
     if (remainingTime === 0 && timerStarted) {
       if (hits >= requiredHits) {
         console.log(`Paso ${currentStep + 1} completado correctamente.`);
+        // Sonido success
+        playSound();
         setCompletedSteps((prev) => {
           const newSteps = [...prev];
           newSteps[currentStep] = true;
