@@ -132,7 +132,7 @@ export default function Home() {
     }
   }, [remainingTime, currentStep, hits, timerStarted]);
 
-    // Manejador de eventos de teclado
+  // Manejador de eventos de teclado
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (event.key === "Enter") {
@@ -144,6 +144,12 @@ export default function Home() {
           webcam.close(cameraRef.current); // Cerrar la cámara
           cameraRef.current.style.display = "none"; // Ocultar la cámara
           setStreaming(null); // Reiniciar el estado de streaming
+
+          // Limpiar el canvas cuando se cierra la cámara
+          if (canvasRef.current) {
+            const ctx = canvasRef.current.getContext("2d");
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          }
         }
       }
     };
@@ -209,6 +215,7 @@ export default function Home() {
             }
             style={{ width: 0, height: 0 }}
           />
+          <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
         </div>
       </div>
     </div>
