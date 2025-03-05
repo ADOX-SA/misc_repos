@@ -29,6 +29,7 @@ export default function Home() {
   const canvasRef = useRef(null);
   const intervalRef = useRef(null); // Referencia para el intervalo
   const webcam = new Webcam(); // Instancia de Webcam
+
   const modelName = "hands_model";
 
   // Cargar el modelo de TensorFlow.js
