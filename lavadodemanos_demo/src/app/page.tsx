@@ -12,18 +12,18 @@ import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 
 export default function Home() {
-  const time = 15; // Cantidad de segundos
-  const allowedTrust = 50; // Confianza permitida
-  const requiredHits = 10; // Número de aciertos requeridos para completar el paso
-  const [remainingTime, setRemainingTime] = useState(time);
-  const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
-  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // [false, false, false, false, false, false]
-  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
-  const [loading, setLoading] = useState({ loading: true, progress: 0 });
-  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
-  const [hits, setHits] = useState(0); // Contador de aciertos
-  const [timerStarted, setTimerStarted] = useState(false); // Estado para controlar si el temporizador ha comenzado
-  const [streaming, setStreaming] = useState(null); // Estado para controlar si la cámara está activa
+  const time = 15; // Tiempo total de cada paso (en segundos)
+  const allowedTrust = 50; // Confianza permitida para que un movimiento se considere válido
+  const [remainingTime, setRemainingTime] = useState(time); // Tiempo restante para completar el paso
+  const [currentStep, setCurrentStep] = useState(0); // Índice del paso actual
+  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // Estado de pasos completados
+  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]); // Predicciones de TensorFlow
+  const [loading, setLoading] = useState({ loading: true, progress: 0 }); // Estado de carga
+  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] }); // Modelo cargado de TensorFlow
+  const [timeAccrued, setTimeAccrued] = useState(0); // Tiempo acumulado (en segundos)
+  const [timerRunning, setTimerRunning] = useState(false); // Si el temporizador está corriendo
+  const [timerStarted, setTimerStarted] = useState(false); // Si el temporizador ha comenzado
+  const [streaming, setStreaming] = useState(null); // Estado de la cámara
 
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
@@ -62,9 +62,9 @@ export default function Home() {
     };
   }, []);
 
-  // Controlar el intervalo
+  // Controlar el intervalo del temporizador
   useEffect(() => {
-    if (timerStarted) {
+    if (timerStarted && timerRunning) {
       intervalRef.current = setInterval(() => {
         setRemainingTime((prev) => {
           if (prev > 0) return prev - 1;
@@ -73,15 +73,14 @@ export default function Home() {
       }, 1000); // Intervalo de 1 segundo
     }
 
-    // Limpiar el intervalo al desmontar o cuando el temporizador se detiene
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [timerStarted]);
+  }, [timerStarted, timerRunning]);
 
-  // Manejar las predicciones y contar aciertos
+  // Manejar las predicciones y acumular el tiempo de aciertos
   useEffect(() => {
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
@@ -92,27 +91,41 @@ export default function Home() {
 
         // Si la predicción coincide con el paso actual
         if (stepIndex === currentStep) {
-          setHits((prev) => prev + 1); // Incrementar el contador de aciertos
-
-          // Si es el primer acierto, iniciar el temporizador
+          // Si el temporizador no ha comenzado, iniciarlo
           if (!timerStarted) {
             setTimerStarted(true);
           }
+
+          // Si el tiempo no está corriendo, comenzar a acumularlo
+          if (!timerRunning) {
+            setTimerRunning(true);
+            setTimeAccrued((prev) => prev + 1); // Acumular 1 segundo cuando el movimiento es detectado
+          }
+        }
+      } else {
+        // Si el movimiento no es detectado correctamente, detener el temporizador
+        if (timerRunning) {
+          setTimerRunning(false);
         }
       }
     }
-  }, [predicciones, currentStep, timerStarted]);
+  }, [predicciones, currentStep, timerStarted, timerRunning]);
 
   // Validar el paso cuando el tiempo se agote
   useEffect(() => {
     if (remainingTime === 0 && timerStarted) {
-      if (hits >= requiredHits) {
+
+      console.log("timeAccrued: ",timeAccrued);
+      console.log("time: ", time);
+      
+      if (timeAccrued >= time) {
+
         console.log(`Paso ${currentStep + 1} completado correctamente.`);
         
         // Solo reproducir el sonido si el paso no ha sido completado previamente
         if (!completedSteps[currentStep]) {
           playSound();
-        };
+        }
 
         setCompletedSteps((prev) => {
           const newSteps = [...prev];
@@ -123,18 +136,20 @@ export default function Home() {
         // Solo avanzar si NO estamos en el último paso
         if (currentStep < labels.length - 1) {
           setCurrentStep((prev) => prev + 1);
-          setRemainingTime(time);
-          setHits(0); // Reiniciar el contador de aciertos
+          setRemainingTime(time); // Reiniciar el tiempo
+          setTimeAccrued(0); // Reiniciar el tiempo acumulado
           setTimerStarted(false); // Reiniciar el estado del temporizador
+          setTimerRunning(false); // Detener el temporizador
         }
       } else {
         console.log(`Paso ${currentStep + 1} no se completó correctamente.`);
-        setRemainingTime(time); // Reiniciar el tiempo para intentar nuevamente
-        setHits(0); // Reiniciar el contador de aciertos
+        setRemainingTime(time); // Reiniciar el tiempo
+        setTimeAccrued(0); // Reiniciar el tiempo acumulado
         setTimerStarted(false); // Reiniciar el estado del temporizador
+        setTimerRunning(false); // Detener el temporizador
       }
     }
-  }, [remainingTime, currentStep, hits, timerStarted]);
+  }, [remainingTime, currentStep, timeAccrued, timerStarted]);
 
   // Manejador de eventos de teclado
   useEffect(() => {
