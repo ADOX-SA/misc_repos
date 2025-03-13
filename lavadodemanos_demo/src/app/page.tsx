@@ -12,22 +12,24 @@ import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 
 export default function Home() {
-  const time = 15;
-  const allowedTrust = 50;
-  const [remainingTime, setRemainingTime] = useState(time);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
-  const [loading, setLoading] = useState({ loading: true, progress: 0 });
-  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
-  const [streaming, setStreaming] = useState(null);
+  const time = 15; // Tiempo total para cada paso
+  const allowedTrust = 50; // Confianza mínima para considerar una predicción válida
+  const [remainingTime, setRemainingTime] = useState(time); // Tiempo restante para el paso actual
+  const [currentStep, setCurrentStep] = useState(0); // Paso actual
+  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // Pasos completados
+  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]); // Predicciones del modelo
+  const [loading, setLoading] = useState({ loading: true, progress: 0 }); // Estado de carga del modelo
+  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] }); // Modelo de TensorFlow
+  const [streaming, setStreaming] = useState(null); // Estado de la cámara
+  const [isTimerRunning, setIsTimerRunning] = useState(false); // Control del temporizador
 
-  const cameraRef = useRef(null);
-  const canvasRef = useRef(null);
-  const intervalRef = useRef(null);
-  const modelName = "hands_model";
-  const webcam = new Webcam();
+  const cameraRef = useRef(null); // Referencia al elemento de video
+  const canvasRef = useRef(null); // Referencia al canvas
+  const intervalRef = useRef(null); // Referencia al intervalo del temporizador
+  const modelName = "hands_model"; // Nombre del modelo
+  const webcam = new Webcam(); // Instancia de la cámara
 
+  // Cargar el modelo de TensorFlow
   useEffect(() => {
     let isMounted = true;
     tf.ready().then(async () => {
@@ -54,6 +56,33 @@ export default function Home() {
     return () => { isMounted = false; };
   }, []);
 
+  // Controlar el intervalo del temporizador
+  useEffect(() => {
+    if (isTimerRunning) {
+      // Iniciar el intervalo si el temporizador está activo
+      intervalRef.current = setInterval(() => {
+        setRemainingTime((prev) => {
+          if (prev > 0) return prev - 1;
+          return 0;
+        });
+      }, 500); // Intervalo de medio segundo
+    } else {
+      // Detener el intervalo si el temporizador no está activo
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    // Limpiar el intervalo al desmontar
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isTimerRunning]);
+
+  // Manejar las predicciones y actualizar el estado del temporizador
   useEffect(() => {
     if (predicciones.length > 0) {
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
@@ -61,51 +90,44 @@ export default function Home() {
 
       if (bestPrediction.score >= allowedTrust) {
         const stepIndex = labels.indexOf(bestPrediction.clase);
-  
+
+        // Si la predicción coincide con el paso actual, activar el temporizador
         if (stepIndex === currentStep) {
-          if (!intervalRef.current) {
-            intervalRef.current = setInterval(() => {
-              setRemainingTime((prev) => {
-                if (prev === 1) {
-                  clearInterval(intervalRef.current);
-                  intervalRef.current = null;
-                }
-                return Math.max(prev - 1, 0);
-              });
-            }, 1000);
-          }
+          setIsTimerRunning(true);
         } else {
-          // Si el paso cambia y no se detecta la acción correcta, el temporizador se pausa
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+          // Si no coincide, detener el temporizador
+          setIsTimerRunning(false);
         }
       } else {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+        // Si la confianza es baja, detener el temporizador
+        setIsTimerRunning(false);
       }
     }
-  }, [predicciones]);
-  
-  // Controla el avance de pasos
+  }, [predicciones, currentStep]);
+
+  // Manejar el tiempo restante y cambiar de paso
   useEffect(() => {
-    if (remainingTime === 0 && currentStep < labels.length - 1) {
-      playSound();
+    if (remainingTime === 0) {
+      setIsTimerRunning(false);
+
       setCompletedSteps((prev) => {
         const newSteps = [...prev];
         newSteps[currentStep] = true;
         return newSteps;
       });
-      setCurrentStep((prev) => prev + 1);
-      setRemainingTime(time); // Reinicia el tiempo pero no lo empieza a contar aún
-    }
-  }, [remainingTime, currentStep]);
-  
-  // Limpia el intervalo cuando el componente se desmonta
-  useEffect(() => {
-    return () => clearInterval(intervalRef.current);
-  }, []);
-  
 
+      // Esperar antes de iniciar el siguiente paso
+      if (currentStep < labels.length - 1) {
+        setTimeout(() => {
+          setCurrentStep((prev) => prev + 1);
+          setRemainingTime(time);
+          setIsTimerRunning(false); // Asegurarse de que el temporizador no se active automáticamente
+        }, 1000); // Esperar un segundo antes de cambiar
+      }
+    }
+  }, [remainingTime, currentStep, labels.length]);
+
+  // Tecla para iniciar/detener la cámara
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (event.key === "Enter") {
