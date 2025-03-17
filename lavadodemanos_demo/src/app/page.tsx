@@ -17,13 +17,15 @@ export default function Home() {
   const requiredHits = 10; // Número de aciertos requeridos para completar el paso
   const [remainingTime, setRemainingTime] = useState(time);
   const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
-  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false)); // [false, false, false, false, false, false]
+  const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
   const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
   const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
   const [hits, setHits] = useState(0); // Contador de aciertos
   const [timerStarted, setTimerStarted] = useState(false); // Estado para controlar si el temporizador ha comenzado
   const [streaming, setStreaming] = useState(null); // Estado para controlar si la cámara está activa
+  const [inactivityCounter, setInactivityCounter] = useState(0); // Contador de inactividad
+  const [showWarning, setShowWarning] = useState(false); // Estado para mostrar el mensaje de advertencia
 
   const cameraRef = useRef(null);
   const canvasRef = useRef(null);
@@ -66,18 +68,12 @@ export default function Home() {
   useEffect(() => {
     if (timerStarted) {
       intervalRef.current = setInterval(() => {
-        setRemainingTime((prev) => {
-          if (prev > 0) return prev - 1;
-          return 0;
-        });
+        setRemainingTime((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000); // Intervalo de 1 segundo
     }
 
-    // Limpiar el intervalo al desmontar o cuando el temporizador se detiene
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [timerStarted]);
 
@@ -98,58 +94,73 @@ export default function Home() {
           if (!timerStarted) {
             setTimerStarted(true);
           }
+
+          // Reiniciar el contador de inactividad si se detectan manos
+          setInactivityCounter(0);
+          setShowWarning(false); // Ocultar el mensaje de advertencia
+        }
+      } else if (timerStarted) {
+        // Solo mostrar la advertencia si el temporizador ha comenzado
+        setInactivityCounter((prev) => prev + 1);
+        if (inactivityCounter >= 2) {
+          setShowWarning(true); // Mostrar el mensaje de advertencia después de 2 segundos
         }
       }
     }
-  }, [predicciones, currentStep, timerStarted]);
+  }, [predicciones, currentStep, timerStarted, inactivityCounter]);
 
   // Validar el paso cuando el tiempo se agote
   useEffect(() => {
     if (remainingTime === 0 && timerStarted) {
       if (hits >= requiredHits) {
         console.log(`Paso ${currentStep + 1} completado correctamente.`);
-        
-        // Solo reproducir el sonido si el paso no ha sido completado previamente
-        if (!completedSteps[currentStep]) {
-          playSound();
-        };
-
+        if (!completedSteps[currentStep]) playSound();
         setCompletedSteps((prev) => {
           const newSteps = [...prev];
           newSteps[currentStep] = true;
           return newSteps;
         });
 
-        // Solo avanzar si NO estamos en el último paso
         if (currentStep < labels.length - 1) {
           setCurrentStep((prev) => prev + 1);
           setRemainingTime(time);
-          setHits(0); // Reiniciar el contador de aciertos
-          setTimerStarted(false); // Reiniciar el estado del temporizador
+          setHits(0);
+          setTimerStarted(false);
         }
       } else {
         console.log(`Paso ${currentStep + 1} no se completó correctamente.`);
-        setRemainingTime(time); // Reiniciar el tiempo para intentar nuevamente
-        setHits(0); // Reiniciar el contador de aciertos
-        setTimerStarted(false); // Reiniciar el estado del temporizador
+        setRemainingTime(time);
+        setHits(0);
+        setTimerStarted(false);
       }
     }
   }, [remainingTime, currentStep, hits, timerStarted]);
+
+  // Manejar el contador de inactividad
+  useEffect(() => {
+    if (inactivityCounter >= 20) {
+      setCurrentStep(0);
+      setCompletedSteps(new Array(labels.length).fill(false));
+      setRemainingTime(time);
+      setHits(0);
+      setTimerStarted(false);
+      setInactivityCounter(0);
+      setShowWarning(false);
+    }
+  }, [inactivityCounter]);
 
   // Manejador de eventos de teclado
   useEffect(() => {
     const handleKeyPress = (event) => {
       if (event.key === "Enter") {
         if (streaming === null) {
-          webcam.open(cameraRef.current); // Abrir la cámara
-          cameraRef.current.style.display = "block"; // Mostrar la cámara
-          setStreaming("camera"); // Establecer el estado de streaming
+          webcam.open(cameraRef.current);
+          cameraRef.current.style.display = "block";
+          setStreaming("camera");
         } else if (streaming === "camera") {
-          webcam.close(cameraRef.current); // Cerrar la cámara
-          cameraRef.current.style.display = "none"; // Ocultar la cámara
-          setStreaming(null); // Reiniciar el estado de streaming
-
-          // Limpiar el canvas cuando se cierra la cámara
+          webcam.close(cameraRef.current);
+          cameraRef.current.style.display = "none";
+          setStreaming(null);
           if (canvasRef.current) {
             const ctx = canvasRef.current.getContext("2d");
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -158,21 +169,14 @@ export default function Home() {
       }
     };
 
-    // Agregar el manejador de eventos al documento
     document.addEventListener("keydown", handleKeyPress);
-
-    // Limpiar el manejador de eventos al desmontar el componente
-    return () => {
-      document.removeEventListener("keydown", handleKeyPress);
-    };
+    return () => document.removeEventListener("keydown", handleKeyPress);
   }, [streaming]);
 
   return (
     <div className={style.centeredGrid}>
       <div className={style.app}>
-        {loading.loading && (
-          <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />
-        )}
+        {loading.loading && <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />}
         <div className={style.colum}>
           <div className={style.columnContent1}>
             <h1>{capitalizeFirstLetter(labels[currentStep])}</h1>
@@ -187,19 +191,20 @@ export default function Home() {
               {labels.map((_, index) => (
                 <SvgIcon
                   key={index}
-                  color={
-                    completedSteps[index]
-                      ? "#5396ED"
-                      : index === currentStep
-                        ? "#AA4CF2"
-                        : "#D9D9D9"
-                  }
+                  color={completedSteps[index] ? "#5396ED" : index === currentStep ? "#AA4CF2" : "#D9D9D9"}
                 />
               ))}
             </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
-            <p className={style.text}>Debe continuar realizando el mismo movimiento de manera constante para completar este paso correctamente durante el transcurso del tiempo.</p>
+            {showWarning && streaming === "camera" ? (
+              <p className={style.warningMessage}>Detección insuficiente. Acérquelas a la cámara para evitar el reinicio</p>
+            ) : (
+              <p className={style.text}>
+                Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
+                este paso correctamente durante el transcurso del tiempo.
+              </p>
+            )}
           </div>
         </div>
         <div className={style.content}>
@@ -207,16 +212,7 @@ export default function Home() {
             autoPlay
             muted
             ref={cameraRef}
-            onPlay={() =>
-              detectVideo(
-                cameraRef.current,
-                model,
-                canvasRef.current,
-                (pred) => {
-                  setPredicciones(pred);
-                }
-              )
-            }
+            onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current, (pred) => setPredicciones(pred))}
             style={{ width: 0, height: 0 }}
           />
           <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
