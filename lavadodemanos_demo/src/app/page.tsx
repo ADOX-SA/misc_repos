@@ -12,64 +12,63 @@ import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 
 export default function Home() {
-  const time = 15; // Cantidad de segundos
-  const allowedTrust = 50; // Confianza permitida
-  const requiredHits = 10; // Número de aciertos requeridos para completar el paso
+  const time = 15;
+  const allowedTrust = 50;
+  const requiredHits = 10;
   const [remainingTime, setRemainingTime] = useState(time);
-  const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
+  const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
+  const [predicciones, setPredicciones] = useState<{ clase: string; score: number }[]>([]); // Corregido: estado inicial vacío
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
-  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
-  const [hits, setHits] = useState(0); // Contador de aciertos
-  const [timerStarted, setTimerStarted] = useState(false); // Estado para controlar si el temporizador ha comenzado
-  const [streaming, setStreaming] = useState(null); // Estado para controlar si la cámara está activa
-  const [inactivityCounter, setInactivityCounter] = useState(0); // Contador de inactividad
-  const [showWarning, setShowWarning] = useState(false); // Estado para mostrar el mensaje de advertencia
+  const [model, setModel] = useState<{ net: tf.GraphModel | null; inputShape: number[] }>({ net: null, inputShape: [1, 0, 0, 3] });
+  const [hits, setHits] = useState(0);
+  const [timerStarted, setTimerStarted] = useState(false);
+  const [streaming, setStreaming] = useState<"camera" | null>(null);
+  const [inactivityCounter, setInactivityCounter] = useState(0);
+  const [showWarning, setShowWarning] = useState(false);
 
-  const cameraRef = useRef(null);
-  const canvasRef = useRef(null);
-  const intervalRef = useRef(null); // Referencia para el intervalo
-  const webcam = new Webcam(); // Instancia de Webcam
+  const [consecutiveNoHandsFrames, setConsecutiveNoHandsFrames] = useState(0);
+
+  const stopDetectionRef = useRef<() => void>(() => {});
+  const cameraRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const webcam = new Webcam();
   const modelName = "hands_model";
 
-  // Cargar el modelo de TensorFlow.js
+  // Cargar modelo
   useEffect(() => {
     let isMounted = true;
     tf.ready().then(async () => {
-      const yolov8 = await tf.loadGraphModel(
-        `${window.location.href}/${modelName}/model.json`,
-        {
-          onProgress: (fractions) => {
-            if (isMounted) {
-              setLoading({ loading: true, progress: fractions });
-            }
-          },
+      try {
+        const yolov8 = await tf.loadGraphModel(
+          `${window.location.href}/${modelName}/model.json`,
+          { onProgress: (fractions) => isMounted && setLoading({ loading: true, progress: fractions }) }
+        );
+
+        const dummyInput = tf.ones(yolov8.inputs[0].shape || [1, 224, 224, 3]);
+        const warmupResults = yolov8.execute(dummyInput);
+
+        if (isMounted) {
+          setLoading({ loading: false, progress: 1 });
+          setModel({ net: yolov8, inputShape: yolov8.inputs[0].shape });
         }
-      );
 
-      const dummyInput = tf.ones(yolov8.inputs[0].shape || [1, 224, 224, 3]);
-      const warmupResults = yolov8.execute(dummyInput);
-
-      if (isMounted) {
-        setLoading({ loading: false, progress: 1 });
-        setModel({ net: yolov8, inputShape: yolov8.inputs[0].shape });
+        tf.dispose([warmupResults, dummyInput]);
+      } catch (error) {
+        console.error("Error cargando el modelo:", error);
       }
-
-      tf.dispose([warmupResults, dummyInput]);
     });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Controlar el intervalo
+  // Temporizador principal
   useEffect(() => {
     if (timerStarted) {
       intervalRef.current = setInterval(() => {
-        setRemainingTime((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000); // Intervalo de 1 segundo
+        setRemainingTime(prev => Math.max(prev - 1, 0));
+      }, 1000);
     }
 
     return () => {
@@ -77,66 +76,40 @@ export default function Home() {
     };
   }, [timerStarted]);
 
-  // Manejar las predicciones y contar aciertos
-  useEffect(() => {
-    if (predicciones.length > 0) {
-      const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
-      console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
-
-      if (bestPrediction.score >= allowedTrust) {
-        const stepIndex = labels.indexOf(bestPrediction.clase);
-
-        // Si la predicción coincide con el paso actual
-        if (stepIndex === currentStep) {
-          setHits((prev) => prev + 1); // Incrementar el contador de aciertos
-
-          // Si es el primer acierto, iniciar el temporizador
-          if (!timerStarted) {
-            setTimerStarted(true);
-          }
-
-          // Reiniciar el contador de inactividad si se detectan manos
-          setInactivityCounter(0);
-          setShowWarning(false); // Ocultar el mensaje de advertencia
+// useEffect para predicciones y manejo de inactividad
+useEffect(() => {
+  if (predicciones.length === 0) {
+    setConsecutiveNoHandsFrames(prev => {
+      if (prev < 5) return prev + 1;
+      else {
+        if (timerStarted) {
+          setInactivityCounter(prev => prev + 1); // Incrementar inactividad cada 5 fotogramas
+          console.log("Inactividad detectada (5 fotogramas sin manos)");
         }
-      } else if (timerStarted) {
-        // Solo mostrar la advertencia si el temporizador ha comenzado
-        setInactivityCounter((prev) => prev + 1);
-        if (inactivityCounter >= 2) {
-          setShowWarning(true); // Mostrar el mensaje de advertencia después de 2 segundos
-        }
+        return 0; // Reiniciar contador de fotogramas
       }
-    }
-  }, [predicciones, currentStep, timerStarted, inactivityCounter]);
+    });
+  } else {
+    setConsecutiveNoHandsFrames(0); // Resetear si hay manos
+    const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
+    const isValid = bestPrediction.score >= allowedTrust && labels.indexOf(bestPrediction.clase) === currentStep;
 
-  // Validar el paso cuando el tiempo se agote
+    if (isValid) {
+      setHits(prev => prev + 1);
+      if (!timerStarted) setTimerStarted(true);
+      setInactivityCounter(0);
+    } else if (timerStarted) {
+      setInactivityCounter(prev => prev + 1); // Inactividad por paso incorrecto (sin esperar 5 fotogramas)
+    }
+  }
+}, [predicciones, currentStep, timerStarted]);
+
+  // Mostrar advertencia después de 2 segundos de inactividad
   useEffect(() => {
-    if (remainingTime === 0 && timerStarted) {
-      if (hits >= requiredHits) {
-        console.log(`Paso ${currentStep + 1} completado correctamente.`);
-        if (!completedSteps[currentStep]) playSound();
-        setCompletedSteps((prev) => {
-          const newSteps = [...prev];
-          newSteps[currentStep] = true;
-          return newSteps;
-        });
+    setShowWarning(inactivityCounter >= 2);
+  }, [inactivityCounter]);
 
-        if (currentStep < labels.length - 1) {
-          setCurrentStep((prev) => prev + 1);
-          setRemainingTime(time);
-          setHits(0);
-          setTimerStarted(false);
-        }
-      } else {
-        console.log(`Paso ${currentStep + 1} no se completó correctamente.`);
-        setRemainingTime(time);
-        setHits(0);
-        setTimerStarted(false);
-      }
-    }
-  }, [remainingTime, currentStep, hits, timerStarted]);
-
-  // Manejar el contador de inactividad
+  // Reinicio total después de 20 segundos de inactividad
   useEffect(() => {
     if (inactivityCounter >= 20) {
       setCurrentStep(0);
@@ -145,26 +118,48 @@ export default function Home() {
       setHits(0);
       setTimerStarted(false);
       setInactivityCounter(0);
-      setShowWarning(false);
     }
   }, [inactivityCounter]);
 
-  // Manejador de eventos de teclado
+  // Validar paso al terminar el tiempo
   useEffect(() => {
-    const handleKeyPress = (event) => {
+    if (remainingTime === 0 && timerStarted) {
+      const success = hits >= requiredHits;
+      console.log(`Paso ${currentStep + 1} ${success ? "completado" : "fallado"}`);
+
+      if (success) {
+        if (!completedSteps[currentStep]) playSound();
+        setCompletedSteps(prev => prev.map((v, i) => i === currentStep ? true : v));
+        
+        if (currentStep < labels.length - 1) {
+          setCurrentStep(prev => prev + 1);
+          setRemainingTime(time);
+          setHits(0);
+          setTimerStarted(false);
+        }
+      } else {
+        setRemainingTime(time);
+        setHits(0);
+        setTimerStarted(false);
+      }
+    }
+  }, [remainingTime, hits, timerStarted]);
+
+  // Manejo de cámara
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
-        if (streaming === null) {
-          webcam.open(cameraRef.current);
-          cameraRef.current.style.display = "block";
+        if (!streaming) {
+          webcam.open(cameraRef.current!);
+          cameraRef.current!.style.display = "block";
           setStreaming("camera");
-        } else if (streaming === "camera") {
-          webcam.close(cameraRef.current);
-          cameraRef.current.style.display = "none";
+        } else {
+          webcam.close(cameraRef.current!);
+          cameraRef.current!.style.display = "none";
           setStreaming(null);
-          if (canvasRef.current) {
-            const ctx = canvasRef.current.getContext("2d");
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-          }
+          
+          stopDetectionRef.current?.();
+          canvasRef.current?.getContext('2d')?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
       }
     };
@@ -208,13 +203,25 @@ export default function Home() {
           </div>
         </div>
         <div className={style.content}>
-          <video
-            autoPlay
-            muted
-            ref={cameraRef}
-            onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current, (pred) => setPredicciones(pred))}
-            style={{ width: 0, height: 0 }}
-          />
+        <video
+          autoPlay
+          muted
+          ref={cameraRef}
+          onPlay={() => {
+            // Detener cualquier detección previa
+            if (stopDetectionRef.current) stopDetectionRef.current();
+            
+            // Iniciar nueva detección y guardar la función de detención
+            stopDetectionRef.current = detectVideo(
+              cameraRef.current,
+              model,
+              canvasRef.current,
+              allowedTrust,
+              (pred) => setPredicciones(pred)
+            );
+          }}
+          style={{ width: 0, height: 0 }}
+        />
           <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
         </div>
       </div>
