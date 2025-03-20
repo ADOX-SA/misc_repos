@@ -14,20 +14,20 @@ import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 export default function Home() {
   const time = 15;
   const allowedTrust = 50;
-  const requiredHits = 10;
   const [remainingTime, setRemainingTime] = useState(time);
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  const [predicciones, setPredicciones] = useState<{ clase: string; score: number }[]>([]); // Corregido: estado inicial vacío
+  const [predicciones, setPredicciones] = useState<{ clase: string; score: number }[]>([]);
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
   const [model, setModel] = useState<{ net: tf.GraphModel | null; inputShape: number[] }>({ net: null, inputShape: [1, 0, 0, 3] });
-  const [hits, setHits] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
   const [streaming, setStreaming] = useState<"camera" | null>(null);
-  const [inactivityCounter, setInactivityCounter] = useState(0);
-  const [showWarning, setShowWarning] = useState(false);
-
   const [consecutiveNoHandsFrames, setConsecutiveNoHandsFrames] = useState(0);
+  const [restartCountdown, setRestartCountdown] = useState(0);
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [stepScores, setStepScores] = useState<number[][]>(new Array(labels.length).fill([]).map(() => []));
+  const [averages, setAverages] = useState<number[]>(new Array(labels.length).fill(0));
+  const [stepConfirmed, setStepConfirmed] = useState(false); // Nuevo estado
 
   const stopDetectionRef = useRef<() => void>(() => {});
   const cameraRef = useRef<HTMLVideoElement>(null);
@@ -76,74 +76,135 @@ export default function Home() {
     };
   }, [timerStarted]);
 
-// useEffect para predicciones y manejo de inactividad
-useEffect(() => {
-  if (predicciones.length === 0) {
-    setConsecutiveNoHandsFrames(prev => {
-      if (prev < 5) return prev + 1;
-      else {
-        if (timerStarted) {
-          setInactivityCounter(prev => prev + 1); // Incrementar inactividad cada 5 fotogramas
-          console.log("Inactividad detectada (5 fotogramas sin manos)");
-        }
-        return 0; // Reiniciar contador de fotogramas
+  // Manejo de detección y tiempos
+  useEffect(() => {
+    if (predicciones.length === 0) {
+      if (!countdownActive) {
+        setConsecutiveNoHandsFrames(prev => Math.min(prev + 1, 5));
       }
-    });
-  } else {
-    setConsecutiveNoHandsFrames(0); // Resetear si hay manos
-    const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
-    const isValid = bestPrediction.score >= allowedTrust && labels.indexOf(bestPrediction.clase) === currentStep;
-
-    if (isValid) {
-      setHits(prev => prev + 1);
-      if (!timerStarted) setTimerStarted(true);
-      setInactivityCounter(0);
-    } else if (timerStarted) {
-      setInactivityCounter(prev => prev + 1); // Inactividad por paso incorrecto (sin esperar 5 fotogramas)
-    }
-  }
-}, [predicciones, currentStep, timerStarted]);
-
-  // Mostrar advertencia después de 2 segundos de inactividad
-  useEffect(() => {
-    setShowWarning(inactivityCounter >= 2);
-  }, [inactivityCounter]);
-
-  // Reinicio total después de 20 segundos de inactividad
-  useEffect(() => {
-    if (inactivityCounter >= 20) {
-      setCurrentStep(0);
-      setCompletedSteps(new Array(labels.length).fill(false));
-      setRemainingTime(time);
-      setHits(0);
       setTimerStarted(false);
-      setInactivityCounter(0);
+      setStepConfirmed(false); // Resetear confirmación si no hay manos
+    } else {
+      setConsecutiveNoHandsFrames(0);
+      if (countdownActive) {
+        setRestartCountdown(0);
+        setCountdownActive(false);
+      }
+
+      const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
+      const isCurrentStep = labels.indexOf(bestPrediction.clase) === currentStep;
+      const isValid = bestPrediction.score >= allowedTrust && isCurrentStep;
+
+      console.log("Clase:", bestPrediction.clase, "- Score:", bestPrediction.score);
+
+      // Lógica de confirmación de paso
+      if (isValid && !stepConfirmed) {
+        setStepConfirmed(true);
+        setTimerStarted(true);
+      }
+
+      // Acumular scores solo si es el paso actual (aunque el score sea bajo)
+      if (stepConfirmed && isCurrentStep) {
+        setStepScores(prev => {
+          const newScores = [...prev];
+          newScores[currentStep] = [...newScores[currentStep], bestPrediction.score];
+          return newScores;
+        });
+      }
     }
-  }, [inactivityCounter]);
+  }, [predicciones, currentStep, countdownActive, stepConfirmed]);
+
+  // Resetear confirmación al cambiar de paso
+  useEffect(() => {
+    setStepConfirmed(false);
+    setTimerStarted(false); // Asegurar que el timer se reinicie al cambiar de paso
+  }, [currentStep]);
+
+  // Manejar reinicio por inactividad
+  useEffect(() => {
+    if (consecutiveNoHandsFrames === 5 && !countdownActive) {
+      setCountdownActive(true);
+      setRestartCountdown(20);
+      console.log("Iniciando cuenta regresiva de reinicio");
+    }
+  }, [consecutiveNoHandsFrames, countdownActive]);
+
+  // Manejar cuenta regresiva de reinicio
+  useEffect(() => {
+    if (countdownActive) {
+      console.log("Cuenta regresiva ACTIVADA");
+      const interval = setInterval(() => {
+        setRestartCountdown(prev => {
+          if (prev <= 1) {
+            console.log("Reiniciando proceso...");
+            resetProcess();
+            setCountdownActive(false);
+            return 0;
+          }
+          console.log("Decrementando cuenta regresiva:", prev - 1);
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => {
+        console.log("Limpiando intervalo de cuenta regresiva");
+        clearInterval(interval);
+      };
+    }
+  }, [countdownActive]);
 
   // Validar paso al terminar el tiempo
   useEffect(() => {
     if (remainingTime === 0 && timerStarted) {
-      const success = hits >= requiredHits;
-      console.log(`Paso ${currentStep + 1} ${success ? "completado" : "fallado"}`);
+      const success = stepScores[currentStep].length > 0; // Validación basada en detecciones registradas
 
       if (success) {
-        if (!completedSteps[currentStep]) playSound();
+        if (!completedSteps[currentStep]) {
+          playSound();
+          const currentStepScores = stepScores[currentStep];
+          const average = currentStepScores.length > 0
+            ? currentStepScores.reduce((a, b) => a + b, 0) / currentStepScores.length
+            : 0;
+          setAverages(prev => {
+            const newAverages = [...prev];
+            newAverages[currentStep] = average;
+            return newAverages;
+          });
+        }
+
         setCompletedSteps(prev => prev.map((v, i) => i === currentStep ? true : v));
-        
+
         if (currentStep < labels.length - 1) {
           setCurrentStep(prev => prev + 1);
           setRemainingTime(time);
-          setHits(0);
           setTimerStarted(false);
         }
       } else {
         setRemainingTime(time);
-        setHits(0);
         setTimerStarted(false);
+        setStepScores(prev => {
+          const newScores = [...prev];
+          newScores[currentStep] = [];
+          return newScores;
+        });
       }
+      setStepConfirmed(false); // Resetear confirmación al finalizar el tiempo
     }
-  }, [remainingTime, hits, timerStarted]);
+  }, [remainingTime, timerStarted]);
+
+  const resetProcess = () => {
+    console.log("Reiniciando todo el proceso...");
+    setCurrentStep(0);
+    setCompletedSteps(new Array(labels.length).fill(false));
+    setRemainingTime(time);
+    setTimerStarted(false);
+    setConsecutiveNoHandsFrames(0);
+    setRestartCountdown(0);
+    setCountdownActive(false);
+    setStepScores(new Array(labels.length).fill([]).map(() => []));
+    setAverages(new Array(labels.length).fill(0));
+    setStepConfirmed(false); // Resetear confirmación
+  };
 
   // Manejo de cámara
   useEffect(() => {
@@ -157,7 +218,7 @@ useEffect(() => {
           webcam.close(cameraRef.current!);
           cameraRef.current!.style.display = "none";
           setStreaming(null);
-          
+
           stopDetectionRef.current?.();
           canvasRef.current?.getContext('2d')?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
@@ -176,6 +237,11 @@ useEffect(() => {
           <div className={style.columnContent1}>
             <h1>{capitalizeFirstLetter(labels[currentStep])}</h1>
             <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
+            {restartCountdown > 0 && (
+              <p className={style.warningMessage}>
+                Reinicio en {restartCountdown}s. Coloque las manos para continuar
+              </p>
+            )}
           </div>
           <div className={style.columnContent2}>
             <img src="/LogoAdox.png" alt="Logo de ADOX" />
@@ -192,37 +258,38 @@ useEffect(() => {
             </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
-            {showWarning && streaming === "camera" ? (
-              <p className={style.warningMessage}>Detección insuficiente. Acérquelas a la cámara para evitar el reinicio</p>
-            ) : (
-              <p className={style.text}>
-                Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
-                este paso correctamente durante el transcurso del tiempo.
-              </p>
+            <p className={style.text}>
+              Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
+              este paso correctamente durante el transcurso del tiempo.
+            </p>
+            {completedSteps.every(v => v) && (
+              <div className={style.averages}>
+                <h3>Promedios de precisión:</h3>
+                {averages.map((avg, index) => (
+                  <p key={index}>Paso {index + 1}: {avg.toFixed(1)}%</p>
+                ))}
+              </div>
             )}
           </div>
         </div>
         <div className={style.content}>
-        <video
-          autoPlay
-          muted
-          ref={cameraRef}
-          onPlay={() => {
-            // Detener cualquier detección previa
-            if (stopDetectionRef.current) stopDetectionRef.current();
-            
-            // Iniciar nueva detección y guardar la función de detención
-            stopDetectionRef.current = detectVideo(
-              cameraRef.current,
-              model,
-              canvasRef.current,
-              allowedTrust,
-              (pred) => setPredicciones(pred)
-            );
-          }}
-          style={{ width: 0, height: 0 }}
-        />
-          <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
+          <video
+            autoPlay
+            muted
+            ref={cameraRef}
+            onPlay={() => {
+              if (stopDetectionRef.current) stopDetectionRef.current();
+              stopDetectionRef.current = detectVideo(
+                cameraRef.current,
+                model,
+                canvasRef.current,
+                allowedTrust,
+                (pred) => setPredicciones(pred)
+              );
+            }}
+            style={{ width: 0, height: 0 }}
+          />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       </div>
     </div>
