@@ -82,7 +82,6 @@ export default function Home() {
       if (!countdownActive) {
         setConsecutiveNoHandsFrames(prev => Math.min(prev + 1, 5));
       }
-      setTimerStarted(false);
       setStepConfirmed(false); // Resetear confirmación si no hay manos
     } else {
       setConsecutiveNoHandsFrames(0);
@@ -123,6 +122,7 @@ export default function Home() {
   // Manejar reinicio por inactividad
   useEffect(() => {
     if (consecutiveNoHandsFrames === 5 && !countdownActive) {
+      setTimerStarted(false);
       setCountdownActive(true);
       setRestartCountdown(20);
       console.log("Iniciando cuenta regresiva de reinicio");
