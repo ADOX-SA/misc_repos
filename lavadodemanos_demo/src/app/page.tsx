@@ -143,7 +143,7 @@ export default function Home() {
       console.log("Cuenta regresiva ACTIVADA");
       const interval = setInterval(() => {
         setRestartCountdown(prev => {
-          if (prev <= 1) {
+          if (prev <= 1 && prev !== 0) {
             console.log("Reiniciando proceso...");
             resetProcess();
             setCountdownActive(false);
