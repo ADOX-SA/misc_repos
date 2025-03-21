@@ -102,6 +102,14 @@ export default function Home() {
         setTimerStarted(true);
       }
 
+       // Cambiar esto
+      // La idea del promedio seria, que tome la cantidad total de todos los pasos incluyendo el actual
+      // y que lo divida por la suma total del score del paso actual
+      // y que lo multiplique por 100 para obtener el porcentaje podria ser esta idea. Porque esta calculando mal el promedio, es mas la cuenta esta mal, siempre va a dar bien.
+      
+      // Otra cosa que estaria bueno es hacer un informe al final del proceso de lavado 
+      // de los pasos que se hicieron en total en cada uno de los pasos, y que se muestre el promedio de cada paso. Esto ayuda a tener un registro para ver que pasos se 
+      // hicieron bien y cuales no. 
       // Acumular scores solo si es el paso actual (aunque el score sea bajo)
       if (stepConfirmed && isCurrentStep) {
         setStepScores(prev => {
