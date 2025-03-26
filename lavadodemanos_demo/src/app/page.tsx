@@ -12,64 +12,64 @@ import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 
 export default function Home() {
-  const time = 15; // Cantidad de segundos
-  const allowedTrust = 50; // Confianza permitida
-  const requiredHits = 10; // Número de aciertos requeridos para completar el paso
+  const time = 15;
+  const allowedTrust = 50;
   const [remainingTime, setRemainingTime] = useState(time);
-  const [currentStep, setCurrentStep] = useState(0); // Índice inicial 0 = Paso 1
+  const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState(new Array(labels.length).fill(false));
-  const [predicciones, setPredicciones] = useState([{ clase: "Cargando...", score: 0 }]);
+  const [predicciones, setPredicciones] = useState<{ clase: string; score: number }[]>([]);
   const [loading, setLoading] = useState({ loading: true, progress: 0 });
-  const [model, setModel] = useState({ net: null, inputShape: [1, 0, 0, 3] });
-  const [hits, setHits] = useState(0); // Contador de aciertos
-  const [timerStarted, setTimerStarted] = useState(false); // Estado para controlar si el temporizador ha comenzado
-  const [streaming, setStreaming] = useState(null); // Estado para controlar si la cámara está activa
-  const [inactivityCounter, setInactivityCounter] = useState(0); // Contador de inactividad
-  const [showWarning, setShowWarning] = useState(false); // Estado para mostrar el mensaje de advertencia
+  const [model, setModel] = useState<{ net: tf.GraphModel | null; inputShape: number[] }>({ net: null, inputShape: [1, 0, 0, 3] });
+  const [timerStarted, setTimerStarted] = useState(false);
+  const [streaming, setStreaming] = useState<"camera" | null>(null);
+  const [consecutiveNoHandsFrames, setConsecutiveNoHandsFrames] = useState(0);
+  const [restartCountdown, setRestartCountdown] = useState(0);
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [stepScores, setStepScores] = useState<number[][]>(new Array(labels.length).fill([]).map(() => []));
+  const [averages, setAverages] = useState<number[]>(new Array(labels.length).fill(0));
+  const [stepConfirmed, setStepConfirmed] = useState(false); 
+  const [initializing, setInitializing] = useState(false);
 
-  const cameraRef = useRef(null);
-  const canvasRef = useRef(null);
-  const intervalRef = useRef(null); // Referencia para el intervalo
-  const webcam = new Webcam(); // Instancia de Webcam
+  const stopDetectionRef = useRef<() => void>(() => {});
+  const cameraRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const webcam = new Webcam();
   const modelName = "hands_model";
 
-  // Cargar el modelo de TensorFlow.js
+  // Cargar modelo
   useEffect(() => {
     let isMounted = true;
     tf.ready().then(async () => {
-      const yolov8 = await tf.loadGraphModel(
-        `${window.location.href}/${modelName}/model.json`,
-        {
-          onProgress: (fractions) => {
-            if (isMounted) {
-              setLoading({ loading: true, progress: fractions });
-            }
-          },
+      try {
+        const yolov8 = await tf.loadGraphModel(
+          `${window.location.href}/${modelName}/model.json`,
+          { onProgress: (fractions) => isMounted && setLoading({ loading: true, progress: fractions }) }
+        );
+
+        const dummyInput = tf.ones(yolov8.inputs[0].shape || [1, 224, 224, 3]);
+        const warmupResults = yolov8.execute(dummyInput);
+
+        if (isMounted) {
+          setLoading({ loading: false, progress: 1 });
+          setModel({ net: yolov8, inputShape: yolov8.inputs[0].shape });
         }
-      );
 
-      const dummyInput = tf.ones(yolov8.inputs[0].shape || [1, 224, 224, 3]);
-      const warmupResults = yolov8.execute(dummyInput);
-
-      if (isMounted) {
-        setLoading({ loading: false, progress: 1 });
-        setModel({ net: yolov8, inputShape: yolov8.inputs[0].shape });
+        tf.dispose([warmupResults, dummyInput]);
+      } catch (error) {
+        console.error("Error cargando el modelo:", error);
       }
-
-      tf.dispose([warmupResults, dummyInput]);
     });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, []);
 
-  // Controlar el intervalo
+  // Temporizador principal
   useEffect(() => {
     if (timerStarted) {
       intervalRef.current = setInterval(() => {
-        setRemainingTime((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000); // Intervalo de 1 segundo
+        setRemainingTime(prev => Math.max(prev - 1, 0));
+      }, 1000);
     }
 
     return () => {
@@ -77,94 +77,167 @@ export default function Home() {
     };
   }, [timerStarted]);
 
-  // Manejar las predicciones y contar aciertos
+  // Manejo de detección y tiempos
   useEffect(() => {
-    if (predicciones.length > 0) {
+    if (predicciones.length === 0) {
+      if (!countdownActive) {
+        setConsecutiveNoHandsFrames(prev => Math.min(prev + 1, 5));
+      }
+      setStepConfirmed(false); // Resetear confirmación si no hay manos
+    } else {
+      setConsecutiveNoHandsFrames(0);
+      if (countdownActive) {
+        setRestartCountdown(0);
+        setCountdownActive(false);
+      }
+
       const bestPrediction = predicciones.reduce((max, p) => (p.score > max.score ? p : max), predicciones[0]);
-      console.log("Clase: ", bestPrediction.clase, "- Score: ", bestPrediction.score);
+      const isCurrentStep = labels.indexOf(bestPrediction.clase) === currentStep;
+      const isValid = bestPrediction.score >= allowedTrust && isCurrentStep;
 
-      if (bestPrediction.score >= allowedTrust) {
-        const stepIndex = labels.indexOf(bestPrediction.clase);
+      console.log("Clase:", bestPrediction.clase, "- Score:", bestPrediction.score);
 
-        // Si la predicción coincide con el paso actual
-        if (stepIndex === currentStep) {
-          setHits((prev) => prev + 1); // Incrementar el contador de aciertos
-
-          // Si es el primer acierto, iniciar el temporizador
-          if (!timerStarted) {
-            setTimerStarted(true);
-          }
-
-          // Reiniciar el contador de inactividad si se detectan manos
-          setInactivityCounter(0);
-          setShowWarning(false); // Ocultar el mensaje de advertencia
+      // Lógica de confirmación de paso
+      if (isValid && !stepConfirmed) {
+        // Activa el inicializador solo en los pasos que son menores al paso 6
+        if (currentStep < labels.length - 1) {
+          setInitializing(true);
         }
-      } else if (timerStarted) {
-        // Solo mostrar la advertencia si el temporizador ha comenzado
-        setInactivityCounter((prev) => prev + 1);
-        if (inactivityCounter >= 2) {
-          setShowWarning(true); // Mostrar el mensaje de advertencia después de 2 segundos
-        }
+        setStepConfirmed(true);
+        setTimerStarted(true);
+      }
+
+       // Cambiar esto
+      // La idea del promedio seria, que tome la cantidad total de todos los pasos incluyendo el actual
+      // y que lo divida por la suma total del score del paso actual
+      // y que lo multiplique por 100 para obtener el porcentaje podria ser esta idea. Porque esta calculando mal el promedio, es mas la cuenta esta mal, siempre va a dar bien.
+      
+      // Otra cosa que estaria bueno es hacer un informe al final del proceso de lavado 
+      // de los pasos que se hicieron en total en cada uno de los pasos, y que se muestre el promedio de cada paso. Esto ayuda a tener un registro para ver que pasos se 
+      // hicieron bien y cuales no. 
+      // Acumular scores solo si es el paso actual (aunque el score sea bajo)
+      if (stepConfirmed && isCurrentStep) {
+        setStepScores(prev => {
+          const newScores = [...prev];
+          newScores[currentStep] = [...newScores[currentStep], bestPrediction.score];
+          return newScores;
+        });
       }
     }
-  }, [predicciones, currentStep, timerStarted, inactivityCounter]);
+  }, [predicciones, currentStep, countdownActive, stepConfirmed]);
 
-  // Validar el paso cuando el tiempo se agote
+  // Resetear confirmación al cambiar de paso
+  useEffect(() => {
+    setStepConfirmed(false);
+    setTimerStarted(false); // Asegurar que el timer se reinicie al cambiar de paso
+  }, [currentStep]);
+
+  // Manejar reinicio por inactividad
+  useEffect(() => {
+    if (consecutiveNoHandsFrames === 5 && !countdownActive && initializing) {
+      setTimerStarted(false);
+      setCountdownActive(true);
+      setRestartCountdown(20);
+      console.log("Iniciando cuenta regresiva de reinicio");
+    }
+  }, [consecutiveNoHandsFrames, countdownActive, initializing]);
+
+  // Manejar cuenta regresiva de reinicio
+  useEffect(() => {
+    if (countdownActive) {
+      console.log("Cuenta regresiva ACTIVADA");
+      const interval = setInterval(() => {
+        setRestartCountdown(prev => {
+          if (prev <= 1 && prev !== 0) {
+            console.log("Reiniciando proceso...");
+            resetProcess();
+            setCountdownActive(false);
+            return 0;
+          }
+          console.log("Decrementando cuenta regresiva:", prev - 1);
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => {
+        console.log("Limpiando intervalo de cuenta regresiva");
+        clearInterval(interval);
+      };
+    }
+  }, [countdownActive]);
+
+  // Validar paso al terminar el tiempo
   useEffect(() => {
     if (remainingTime === 0 && timerStarted) {
-      if (hits >= requiredHits) {
-        console.log(`Paso ${currentStep + 1} completado correctamente.`);
-        if (!completedSteps[currentStep]) playSound();
-        setCompletedSteps((prev) => {
-          const newSteps = [...prev];
-          newSteps[currentStep] = true;
-          return newSteps;
-        });
+      const success = stepScores[currentStep].length > 0; // Validación basada en detecciones registradas
+
+      if (success) {
+        if (!completedSteps[currentStep]) {
+          playSound();
+          const currentStepScores = stepScores[currentStep];
+          const average = currentStepScores.length > 0
+            ? currentStepScores.reduce((a, b) => a + b, 0) / currentStepScores.length
+            : 0;
+          setAverages(prev => {
+            const newAverages = [...prev];
+            newAverages[currentStep] = average;
+            return newAverages;
+          });
+        }
+
+        setCompletedSteps(prev => prev.map((v, i) => i === currentStep ? true : v));
 
         if (currentStep < labels.length - 1) {
-          setCurrentStep((prev) => prev + 1);
+          setCurrentStep(prev => prev + 1);
           setRemainingTime(time);
-          setHits(0);
           setTimerStarted(false);
+        } else {
+          setInitializing(false);
         }
       } else {
-        console.log(`Paso ${currentStep + 1} no se completó correctamente.`);
         setRemainingTime(time);
-        setHits(0);
         setTimerStarted(false);
+        setStepScores(prev => {
+          const newScores = [...prev];
+          newScores[currentStep] = [];
+          return newScores;
+        });
       }
+      setStepConfirmed(false); // Resetear confirmación al finalizar el tiempo
     }
-  }, [remainingTime, currentStep, hits, timerStarted]);
+  }, [remainingTime, timerStarted]);
 
-  // Manejar el contador de inactividad
-  useEffect(() => {
-    if (inactivityCounter >= 20) {
-      setCurrentStep(0);
-      setCompletedSteps(new Array(labels.length).fill(false));
-      setRemainingTime(time);
-      setHits(0);
-      setTimerStarted(false);
-      setInactivityCounter(0);
-      setShowWarning(false);
-    }
-  }, [inactivityCounter]);
+  // Resetea todo a los valores inciales.
+  const resetProcess = () => {
+    console.log("Reiniciando todo el proceso...");
+    setCurrentStep(0);
+    setCompletedSteps(new Array(labels.length).fill(false));
+    setRemainingTime(time);
+    setTimerStarted(false);
+    setConsecutiveNoHandsFrames(0);
+    setRestartCountdown(0);
+    setCountdownActive(false);
+    setStepScores(new Array(labels.length).fill([]).map(() => []));
+    setAverages(new Array(labels.length).fill(0));
+    setStepConfirmed(false);
+    setInitializing(false);
+  };
 
-  // Manejador de eventos de teclado
+  // Manejo de cámara
   useEffect(() => {
-    const handleKeyPress = (event) => {
+    const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "Enter") {
-        if (streaming === null) {
-          webcam.open(cameraRef.current);
-          cameraRef.current.style.display = "block";
+        if (!streaming) {
+          webcam.open(cameraRef.current!);
+          cameraRef.current!.style.display = "block";
           setStreaming("camera");
-        } else if (streaming === "camera") {
-          webcam.close(cameraRef.current);
-          cameraRef.current.style.display = "none";
+        } else {
+          webcam.close(cameraRef.current!);
+          cameraRef.current!.style.display = "none";
           setStreaming(null);
-          if (canvasRef.current) {
-            const ctx = canvasRef.current.getContext("2d");
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-          }
+
+          stopDetectionRef.current?.();
+          canvasRef.current?.getContext('2d')?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         }
       }
     };
@@ -181,6 +254,11 @@ export default function Home() {
           <div className={style.columnContent1}>
             <h1>{capitalizeFirstLetter(labels[currentStep])}</h1>
             <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
+            {restartCountdown > 0 && (
+              <p className={style.warningMessage}>
+                Reinicio en {restartCountdown}s. Coloque las manos para continuar
+              </p>
+            )}
           </div>
           <div className={style.columnContent2}>
             <img src="/LogoAdox.png" alt="Logo de ADOX" />
@@ -197,13 +275,17 @@ export default function Home() {
             </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
-            {showWarning && streaming === "camera" ? (
-              <p className={style.warningMessage}>Detección insuficiente. Acérquelas a la cámara para evitar el reinicio</p>
-            ) : (
-              <p className={style.text}>
-                Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
-                este paso correctamente durante el transcurso del tiempo.
-              </p>
+            <p className={style.text}>
+              Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
+              este paso correctamente durante el transcurso del tiempo.
+            </p>
+            {completedSteps.every(v => v) && (
+              <div className={style.averages}>
+                <h3>Promedios de precisión:</h3>
+                {averages.map((avg, index) => (
+                  <p key={index}>Paso {index + 1}: {avg.toFixed(1)}%</p>
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -212,10 +294,19 @@ export default function Home() {
             autoPlay
             muted
             ref={cameraRef}
-            onPlay={() => detectVideo(cameraRef.current, model, canvasRef.current, (pred) => setPredicciones(pred))}
+            onPlay={() => {
+              if (stopDetectionRef.current) stopDetectionRef.current();
+              stopDetectionRef.current = detectVideo(
+                cameraRef.current,
+                model,
+                canvasRef.current,
+                allowedTrust,
+                (pred) => setPredicciones(pred)
+              );
+            }}
             style={{ width: 0, height: 0 }}
           />
-          <canvas ref={canvasRef} style={{ display: "none" }} /> {/* Canvas oculto */}
+          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       </div>
     </div>
