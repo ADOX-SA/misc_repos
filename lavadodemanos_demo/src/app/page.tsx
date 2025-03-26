@@ -27,7 +27,8 @@ export default function Home() {
   const [countdownActive, setCountdownActive] = useState(false);
   const [stepScores, setStepScores] = useState<number[][]>(new Array(labels.length).fill([]).map(() => []));
   const [averages, setAverages] = useState<number[]>(new Array(labels.length).fill(0));
-  const [stepConfirmed, setStepConfirmed] = useState(false); // Nuevo estado
+  const [stepConfirmed, setStepConfirmed] = useState(false); 
+  const [initializing, setInitializing] = useState(false);
 
   const stopDetectionRef = useRef<() => void>(() => {});
   const cameraRef = useRef<HTMLVideoElement>(null);
@@ -98,6 +99,10 @@ export default function Home() {
 
       // Lógica de confirmación de paso
       if (isValid && !stepConfirmed) {
+        // Activa el inicializador solo en los pasos que son menores al paso 6
+        if (currentStep < labels.length - 1) {
+          setInitializing(true);
+        }
         setStepConfirmed(true);
         setTimerStarted(true);
       }
@@ -129,13 +134,13 @@ export default function Home() {
 
   // Manejar reinicio por inactividad
   useEffect(() => {
-    if (consecutiveNoHandsFrames === 5 && !countdownActive) {
+    if (consecutiveNoHandsFrames === 5 && !countdownActive && initializing) {
       setTimerStarted(false);
       setCountdownActive(true);
       setRestartCountdown(20);
       console.log("Iniciando cuenta regresiva de reinicio");
     }
-  }, [consecutiveNoHandsFrames, countdownActive]);
+  }, [consecutiveNoHandsFrames, countdownActive, initializing]);
 
   // Manejar cuenta regresiva de reinicio
   useEffect(() => {
@@ -186,6 +191,8 @@ export default function Home() {
           setCurrentStep(prev => prev + 1);
           setRemainingTime(time);
           setTimerStarted(false);
+        } else {
+          setInitializing(false);
         }
       } else {
         setRemainingTime(time);
@@ -200,6 +207,7 @@ export default function Home() {
     }
   }, [remainingTime, timerStarted]);
 
+  // Resetea todo a los valores inciales.
   const resetProcess = () => {
     console.log("Reiniciando todo el proceso...");
     setCurrentStep(0);
@@ -211,7 +219,8 @@ export default function Home() {
     setCountdownActive(false);
     setStepScores(new Array(labels.length).fill([]).map(() => []));
     setAverages(new Array(labels.length).fill(0));
-    setStepConfirmed(false); // Resetear confirmación
+    setStepConfirmed(false);
+    setInitializing(false);
   };
 
   // Manejo de cámara
