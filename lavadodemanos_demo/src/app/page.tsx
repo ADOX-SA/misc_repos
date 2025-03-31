@@ -6,10 +6,12 @@ import { Webcam } from "../utils/webcam";
 import Loader from "@/components/loader";
 import { detectVideo } from "../utils/detect";
 import style from '../style/App.module.css';
-import SvgIcon from "@/components/IconSteps/IconSteps";
+import IconSteps from "@/components/IconSteps/IconSteps";
 import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
+import LogoAdox from "../../public/LogoAdox/Logo";
+import Title from "../../public/Titulo/Titulo";
 
 export default function Home() {
   const time = 15;
@@ -248,11 +250,42 @@ export default function Home() {
 
   return (
     <div className={style.centeredGrid}>
-      <div className={style.app}>
-        {loading.loading && <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />}
-        <div className={style.colum}>
-          <div className={style.columnContent1}>
-            <h1>{capitalizeFirstLetter(labels[currentStep])}</h1>
+      {loading.loading && <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />}
+      <div className={style.header}>
+        <Title/>
+        <LogoAdox/>
+      </div>
+      <div className={style.divider} />
+      <div className={style.steps}>
+        <p>Control de lavado de manos</p>
+        <div>
+          {labels.map((_, index) => (
+            <IconSteps
+              key={index}
+              steps={index+1}
+              color={completedSteps[index] ? "#5396ED" : index === currentStep ? "#AA4CF2" : "#D9D9D9"}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={style.container}>
+        <div className={style.column}>
+          <div className={style.content1}>
+            {/* <h1>{capitalizeFirstLetter(labels[currentStep])}</h1> */}
+            <video 
+                width="480" 
+                height="600"
+                autoPlay 
+                muted 
+                loop
+            >
+                <source src={`/Pasos/Paso${currentStep + 1}.mp4`} type="video/mp4" />
+                Tu navegador no soporta el elemento de video.
+            </video>
+
+            {/* Modificar el tamaño de los videos 480px x 600px */}
+
             <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
             {restartCountdown > 0 && (
               <p className={style.warningMessage}>
@@ -261,18 +294,6 @@ export default function Home() {
             )}
           </div>
           <div className={style.columnContent2}>
-            <img src="/LogoAdox.png" alt="Logo de ADOX" />
-            <p className={style.title}>Control de lavado de manos</p>
-            <div className={style.divider} />
-            <p className={style.subTitles1}>Pasos completados</p>
-            <div className={style.IconSteps}>
-              {labels.map((_, index) => (
-                <SvgIcon
-                  key={index}
-                  color={completedSteps[index] ? "#5396ED" : index === currentStep ? "#AA4CF2" : "#D9D9D9"}
-                />
-              ))}
-            </div>
             <p className={style.subTitles2}>Tiempo</p>
             <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
             <p className={style.text}>
@@ -309,6 +330,7 @@ export default function Home() {
           <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       </div>
+      <div className={style.divider} />
     </div>
   );
 }
