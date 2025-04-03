@@ -10,7 +10,7 @@ const TitleProject: React.FC = () => {
         >
         <text
             x="50"
-            y="80"
+            y="100"
             fontFamily="Roboto"
             fontWeight="700"
             fontSize="90"
@@ -20,7 +20,7 @@ const TitleProject: React.FC = () => {
         </text>
         <text
             x="280"
-            y="80"
+            y="100"
             fontFamily="Roboto"
             fontWeight="700"
             fontSize="90"
