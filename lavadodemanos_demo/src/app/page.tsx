@@ -340,7 +340,7 @@ export default function Home() {
                     width: "100%",
                     height: "100%",
                     objectFit: "cover", // Mantiene relación de aspecto cubriendo el contenedor
-                    transform: "scaleX(-1)", // Opcional: espejo para efecto espejo
+                    transform: "rotate(180deg)", // Rota 180 grados el video
                   }}
                 />
               </div>
