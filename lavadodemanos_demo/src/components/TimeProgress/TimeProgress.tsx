@@ -15,7 +15,7 @@ const ProgressTime: React.FC<ProgressProps> = ({ initialTime }) => {
     return (
         <div className={styles.progressContainer}>
             <div className={styles.text}>
-                {time}
+                <p>{time}</p>
             </div>
         </div>
     );

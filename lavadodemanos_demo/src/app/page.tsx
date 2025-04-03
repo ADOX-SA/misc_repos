@@ -263,7 +263,7 @@ export default function Home() {
             <IconSteps
               key={index}
               steps={index+1}
-              color={completedSteps[index] ? "#5396ED" : index === currentStep ? "#AA4CF2" : "#D9D9D9"}
+              color={completedSteps[index] ? "#AA4CF2" : index === currentStep ? "#AA4CF2" : "#D9D9D9"}
             />
           ))}
         </div>
@@ -346,7 +346,6 @@ export default function Home() {
               </div>
               <canvas ref={canvasRef} style={{ display: "none" }} />
               <ProgressTime key={remainingTime} initialTime={remainingTime}/>
-
           </div>
         </div>
       </div>
