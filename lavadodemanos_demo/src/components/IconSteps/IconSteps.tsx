@@ -25,8 +25,8 @@ const IconSteps: React.FC<SvgIconProps> = ({ width = 72, height = 72, color = "#
             y="50%" 
             dominantBaseline="middle" 
             textAnchor="middle" 
-            fontSize="32" 
-            fontWeight="600"
+            fontSize="40" 
+            fontWeight="300"
             fill={color}
             fontFamily="Roboto"
         >
