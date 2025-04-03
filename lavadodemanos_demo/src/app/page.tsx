@@ -252,6 +252,7 @@ export default function Home() {
     <div className={style.centeredGrid}>
       {loading.loading && <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />}
       <div className={style.header}>
+        {/*Modificar el auto que tiene en height los svg  */}
         <Title/>
         <LogoAdox/>
       </div>
@@ -283,23 +284,18 @@ export default function Home() {
                 <source src={`/Pasos/Paso${currentStep + 1}.mp4`} type="video/mp4" />
                 Tu navegador no soporta el elemento de video.
             </video>
-
-            {/* Modificar el tamaño de los videos 480px x 600px */}
-
-            <img src={`/Pasos/Paso${currentStep + 1}.jpg`} alt={`Paso ${currentStep + 1}`} />
-            {restartCountdown > 0 && (
-              <p className={style.warningMessage}>
-                Reinicio en {restartCountdown}s. Coloque las manos para continuar
-              </p>
-            )}
           </div>
           <div className={style.columnContent2}>
-            <p className={style.subTitles2}>Tiempo</p>
-            <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" />
-            <p className={style.text}>
-              Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
-              este paso correctamente durante el transcurso del tiempo.
-            </p>
+            <video
+              width="480" 
+              height="600"
+              autoPlay
+              muted
+              ref={cameraRef}
+            />
+
+            {/* <p className={style.subTitles2}>Tiempo</p> */}
+            {/* <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" /> */}
             {completedSteps.every(v => v) && (
               <div className={style.averages}>
                 <h3>Promedios de precisión:</h3>
@@ -310,6 +306,15 @@ export default function Home() {
             )}
           </div>
         </div>
+        <p className={style.text}>
+          Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
+          este paso correctamente durante el transcurso del tiempo.
+        </p>
+        {restartCountdown > 0 && (
+          <p className={style.warningMessage}>
+            Reinicio en {restartCountdown}s. Coloque las manos para continuar
+          </p>
+        )}
         <div className={style.content}>
           <video
             autoPlay
