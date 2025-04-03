@@ -67,7 +67,7 @@
   justify-content: center;
   flex-direction: row;
   /* padding: 0px 32px 0px 32px; */
-  margin: 32px 0 24px;
+  margin: 16px 0 18px;
   gap: 80px;
 }
 
@@ -141,10 +141,15 @@
   font-family: 'Roboto';
   font-style: normal;
   color: #ff0000;
-  font-weight: 500;
-  font-size: 22px;
+  font-weight: 300;
+  font-size: 20px;
   text-align: center;
   margin: 10px 0px 0px;
+}
+
+.warningMessage h3{
+  font-weight: 500;
+  font-size: 22px;
 }
 
 @keyframes blink {

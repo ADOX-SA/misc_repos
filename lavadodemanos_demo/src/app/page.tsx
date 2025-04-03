@@ -272,11 +272,14 @@ export default function Home() {
           <p className={style.text}>
             Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
             este paso correctamente durante el transcurso del tiempo.
-        </p>
+          </p>
         {restartCountdown  > 0 && (
-            <p className={style.warningMessage}>
-              Reinicio en {restartCountdown}s. Coloque las manos para continuar
+          <div className={style.warningMessage}>
+            <h3>¡NO SE DETECTA MOVIMIENTO!</h3>
+            <p>
+              Reinicio en {restartCountdown}s.
             </p>
+          </div>
           )}
       </div>
       <div className={style.container}>
