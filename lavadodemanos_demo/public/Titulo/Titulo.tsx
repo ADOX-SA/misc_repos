@@ -4,29 +4,29 @@ const TitleProject: React.FC = () => {
     return (
         <svg
         xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 589.3 94.7"
+        viewBox="0 0 700 120"
         width="150px"
         height="30px"
         >
         <text
-            x="24"
+            x="50"
             y="80"
             fontFamily="Roboto"
             fontWeight="700"
-            fontSize="110.45"
+            fontSize="90"
             fill="#211915"
         >
-            Higiene
+            Clean
         </text>
         <text
-            x="405"
+            x="280"
             y="80"
             fontFamily="Roboto"
             fontWeight="700"
-            fontSize="110.45"
+            fontSize="90"
             fill="#AA4CF2"
         >
-            IA
+            Control
         </text>
         </svg>
     );
