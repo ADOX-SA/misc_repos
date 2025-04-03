@@ -7,11 +7,11 @@ import Loader from "@/components/loader";
 import { detectVideo } from "../utils/detect";
 import style from '../style/App.module.css';
 import IconSteps from "@/components/IconSteps/IconSteps";
-import CircularProgressTime from "@/components/TimeProgress/TimeProgress";
+import ProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 import LogoAdox from "../../public/LogoAdox/Logo";
-import Title from "../../public/Titulo/Titulo";
+import TitleProject from "../../public/Titulo/Titulo";
 
 export default function Home() {
   const time = 15;
@@ -252,8 +252,7 @@ export default function Home() {
     <div className={style.centeredGrid}>
       {loading.loading && <Loader text="Cargando modelo..." progress={(loading.progress * 100).toFixed(2)} />}
       <div className={style.header}>
-        {/*Modificar el auto que tiene en height los svg  */}
-        <Title/>
+        <TitleProject/>
         <LogoAdox/>
       </div>
       <div className={style.divider} />
@@ -269,70 +268,83 @@ export default function Home() {
           ))}
         </div>
       </div>
-
+      <div className={style.contentText}>
+          <p className={style.text}>
+            Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
+            este paso correctamente durante el transcurso del tiempo.
+        </p>
+        {restartCountdown  > 0 && (
+            <p className={style.warningMessage}>
+              Reinicio en {restartCountdown}s. Coloque las manos para continuar
+            </p>
+          )}
+      </div>
       <div className={style.container}>
         <div className={style.column}>
           <div className={style.content1}>
-            {/* <h1>{capitalizeFirstLetter(labels[currentStep])}</h1> */}
-            <video 
-                width="480" 
-                height="600"
-                autoPlay 
-                muted 
-                loop
-            >
-                <source src={`/Pasos/Paso${currentStep + 1}.mp4`} type="video/mp4" />
-                Tu navegador no soporta el elemento de video.
-            </video>
+            <div>
+              {completedSteps.every(v => v) ? (
+                <div className={style.averages}>
+                  <h3>Promedios de precisión:</h3>
+                  {averages.map((avg, index) => (
+                    <div key={index} className={style.progressItem}>
+                      <p>Paso {index + 1}: {avg.toFixed(1)}%</p>
+                      <div className={style.progressBar}>
+                        <div className={style.progressFill} style={{ width: `${avg}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <video 
+                  width="480" 
+                  height="600"
+                  autoPlay 
+                  muted 
+                  loop
+                >
+                  <source src={`/Pasos/Paso${currentStep + 1}.mp4`} type="video/mp4" />
+                  Tu navegador no soporta el elemento de video.
+                </video>
+              )}
+            </div>
           </div>
-          <div className={style.columnContent2}>
-            <video
-              width="480" 
-              height="600"
-              autoPlay
-              muted
-              ref={cameraRef}
-            />
-
-            {/* <p className={style.subTitles2}>Tiempo</p> */}
-            {/* <CircularProgressTime key={remainingTime} initialTime={remainingTime} size="180" /> */}
-            {completedSteps.every(v => v) && (
-              <div className={style.averages}>
-                <h3>Promedios de precisión:</h3>
-                {averages.map((avg, index) => (
-                  <p key={index}>Paso {index + 1}: {avg.toFixed(1)}%</p>
-                ))}
+          <div>
+            <div style={{ 
+              width: 480, 
+              height: 600,
+              overflow: "hidden",
+              backgroundImage: "url('/Camera/Camera.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              position: "relative" // Nuevo
+            }}>
+                <video
+                  autoPlay
+                  muted
+                  ref={cameraRef}
+                  onPlay={() => {
+                    if (stopDetectionRef.current) stopDetectionRef.current();
+                    stopDetectionRef.current = detectVideo(
+                      cameraRef.current,
+                      model,
+                      canvasRef.current,
+                      allowedTrust,
+                      (pred) => setPredicciones(pred)
+                    );
+                  }}
+                  style={{ 
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover", // Mantiene relación de aspecto cubriendo el contenedor
+                    transform: "scaleX(-1)", // Opcional: espejo para efecto espejo
+                  }}
+                />
               </div>
-            )}
+              <canvas ref={canvasRef} style={{ display: "none" }} />
+              <ProgressTime key={remainingTime} initialTime={remainingTime}/>
+
           </div>
-        </div>
-        <p className={style.text}>
-          Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
-          este paso correctamente durante el transcurso del tiempo.
-        </p>
-        {restartCountdown > 0 && (
-          <p className={style.warningMessage}>
-            Reinicio en {restartCountdown}s. Coloque las manos para continuar
-          </p>
-        )}
-        <div className={style.content}>
-          <video
-            autoPlay
-            muted
-            ref={cameraRef}
-            onPlay={() => {
-              if (stopDetectionRef.current) stopDetectionRef.current();
-              stopDetectionRef.current = detectVideo(
-                cameraRef.current,
-                model,
-                canvasRef.current,
-                allowedTrust,
-                (pred) => setPredicciones(pred)
-              );
-            }}
-            style={{ width: 0, height: 0 }}
-          />
-          <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
       </div>
       <div className={style.divider} />
