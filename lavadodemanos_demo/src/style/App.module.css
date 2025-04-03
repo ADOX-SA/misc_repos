@@ -1,7 +1,7 @@
 .centeredGrid {
   display: grid;
   /* place-items: center; */
-  padding: 8px 32px;
+  padding: 8px 40px;
 }
 
 .header {
