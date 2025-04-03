@@ -6,7 +6,7 @@ const Title: React.FC = () => {
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 589.3 94.7"
         width="200px"
-        height="auto"
+        height="30px"
         >
         <text
             x="24"

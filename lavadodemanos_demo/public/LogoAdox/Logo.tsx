@@ -7,7 +7,7 @@ const Logo: React.FC = () => {
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 961.54 250"
         width="150px"
-        height="auto"
+        height="30px"
         >
         <defs>
             <style>
