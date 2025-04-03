@@ -1,11 +1,11 @@
 import React from "react";
 
-const Title: React.FC = () => {
+const TitleProject: React.FC = () => {
     return (
         <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 589.3 94.7"
-        width="200px"
+        width="150px"
         height="30px"
         >
         <text
@@ -32,4 +32,4 @@ const Title: React.FC = () => {
     );
 };
 
-export default Title;
+export default TitleProject;
