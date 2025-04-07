@@ -12,6 +12,7 @@ import labels from "../utils/labels.json";
 import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
 import LogoAdox from "../../public/LogoAdox/Logo";
 import TitleProject from "../../public/Titulo/Titulo";
+import EyeOffIcon from "@/components/IconEye/IconEye";
 
 export default function Home() {
   const time = 15;
@@ -273,14 +274,6 @@ export default function Home() {
             Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
             este paso correctamente durante el transcurso del tiempo.
           </p>
-        {restartCountdown  > 0 && (
-          <div className={style.warningMessage}>
-            <h3>¡NO SE DETECTA MOVIMIENTO!</h3>
-            <p>
-              Reinicio en {restartCountdown}s.
-            </p>
-          </div>
-          )}
       </div>
       <div className={style.container}>
         <div className={style.column}>
@@ -320,7 +313,7 @@ export default function Home() {
               backgroundImage: "url('/Camera/Camera.jpg')",
               backgroundSize: "cover",
               backgroundPosition: "center",
-              position: "relative" // Nuevo
+              position: "relative"
             }}>
                 <video
                   autoPlay
@@ -343,9 +336,31 @@ export default function Home() {
                     transform: "rotate(180deg)", // Rota 180 grados el video
                   }}
                 />
+            </div>
+            <canvas ref={canvasRef} style={{ display: "none" }} />
+            <ProgressTime key={remainingTime} initialTime={remainingTime}/>
+            {restartCountdown > 0 && (
+              <div className={style.warningMessage} style={{
+                position: "absolute",
+                top: 5,
+                left: 960,
+                width: "26%",
+                height: "95%",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                textAlign: "center",
+                padding: 20,
+                zIndex: 10
+              }}>
+                <h3>Sin actividad reconocida</h3>
+                <EyeOffIcon size={120} />
+                <p>Reinicio en {restartCountdown}s.</p>
               </div>
-              <canvas ref={canvasRef} style={{ display: "none" }} />
-              <ProgressTime key={remainingTime} initialTime={remainingTime}/>
+            )}
           </div>
         </div>
       </div>
