@@ -198,6 +198,13 @@ export default function Home() {
           setCurrentStep(prev => prev + 1);
           setRemainingTime(time);
           setTimerStarted(false);
+          //Valida el ultimo paso y apaga la camara.
+          webcam.close(cameraRef.current!);
+          cameraRef.current!.style.display = "none";
+          setStreaming(null);
+
+          stopDetectionRef.current?.();
+          canvasRef.current?.getContext('2d')?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         } else {
           setInitializing(false);
         }
