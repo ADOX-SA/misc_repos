@@ -302,14 +302,15 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <video 
+                <video
+                  key={currentStep}
                   width="480" 
                   height="600"
                   autoPlay 
                   muted 
                   loop
                 >
-                  <source src={`/Pasos/Paso${currentStep + 1}.mp4`} type="video/mp4" />
+                  <source src={`/Pasos/Paso${currentStep +1}.mp4`} type="video/mp4" />
                   Tu navegador no soporta el elemento de video.
                 </video>
               )}
