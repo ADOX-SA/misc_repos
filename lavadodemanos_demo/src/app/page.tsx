@@ -9,7 +9,7 @@ import style from '../style/App.module.css';
 import IconSteps from "@/components/IconSteps/IconSteps";
 import ProgressTime from "@/components/TimeProgress/TimeProgress";
 import labels from "../utils/labels.json";
-import { capitalizeFirstLetter, playSound } from "@/utils/func.utils";
+import { capitalizeFirstLetter, soundNotificacion, soundSuccess } from "@/utils/func.utils";
 import LogoAdox from "../../public/LogoAdox/Logo";
 import TitleProject from "../../public/Titulo/Titulo";
 import EyeOffIcon from "@/components/IconEye/IconEye";
@@ -148,7 +148,10 @@ export default function Home() {
   // Manejar cuenta regresiva de reinicio
   useEffect(() => {
     if (countdownActive) {
-      console.log("Cuenta regresiva ACTIVADA");
+      const timeout = setTimeout(() => {
+        soundNotificacion();
+      }, 500);
+      console.log("Cuenta regresiva ACTIVADA")
       const interval = setInterval(() => {
         setRestartCountdown(prev => {
           if (prev <= 1 && prev !== 0) {
@@ -164,6 +167,7 @@ export default function Home() {
 
       return () => {
         console.log("Limpiando intervalo de cuenta regresiva");
+        clearTimeout(timeout);
         clearInterval(interval);
       };
     }
@@ -176,7 +180,7 @@ export default function Home() {
 
       if (success) {
         if (!completedSteps[currentStep]) {
-          playSound();
+          soundSuccess();
           const currentStepScores = stepScores[currentStep];
           const average = currentStepScores.length > 0
             ? currentStepScores.reduce((a, b) => a + b, 0) / currentStepScores.length
