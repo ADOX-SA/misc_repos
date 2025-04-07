@@ -271,8 +271,7 @@ export default function Home() {
       </div>
       <div className={style.contentText}>
           <p className={style.text}>
-            Debe continuar realizando el mismo movimiento como se muestra en la imagen izquierda, respetando el ángulo y movimiento para completar
-            este paso correctamente durante el transcurso del tiempo.
+            Seguí el movimiento y ángulo de la imagen izquierda durante el tiempo indicado.
           </p>
       </div>
       <div className={style.container}>
